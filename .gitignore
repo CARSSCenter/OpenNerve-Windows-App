@@ -1,0 +1,55 @@
+############################################
+# Secrets / private material (CRITICAL)
+############################################
+secrets/
+**/secrets/
+*.pem
+*.key
+*.der
+*.crt
+*_priv*
+*_private*
+authkey.txt
+admin_priv*.txt
+
+############################################
+# Stim parameters file
+############################################
+stim.txt
+
+############################################
+# Build outputs (C# / .NET)
+############################################
+bin/
+obj/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+############################################
+# Visual Studio / VSCode
+############################################
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+############################################
+# User-specific / local files
+############################################
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+
+############################################
+# OS junk
+############################################
+.DS_Store
+Thumbs.db
+
