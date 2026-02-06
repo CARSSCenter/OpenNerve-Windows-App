@@ -55,7 +55,7 @@ namespace controller
         private static int PacketLen = 100;
         private static int PacketCnt = 100;
         private double[] EMGdata = new double[PacketLen * PacketCnt]; //10,000
-        private float sampleRate = 2000; // Hz
+        private float sampleRate = 6400; // Hz
         private int DecValue = 38;
         private int FFTsize = 256; //10000/DecValue = 263
         private int inMaxValue = 3; //mV
@@ -1587,7 +1587,7 @@ namespace controller
                 CurrentSignalMode = SignalMode.EMG1;
 
                 //Change constants for analyzing signal
-                sampleRate = 2560; // Hz
+                sampleRate = 6400; // Hz
                 DecValue = 10;
                 DECPeriod = (int)(1000 * DecValue / sampleRate);
             }
