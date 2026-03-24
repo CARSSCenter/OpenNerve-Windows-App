@@ -9,6 +9,8 @@ namespace controller
         {
             ApplicationConfiguration.Initialize();
 
+            Logger.Initialize();
+
             //Some logging code to catch crashes (hopefully). ChatGPT helped with this, so use with caution
             AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
@@ -25,6 +27,8 @@ namespace controller
 
             //Run the form
             Application.Run(new Form1());
+
+            Logger.Close();
         }
 
         private static readonly string LogPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "ONrecorderDebugLog.txt");
