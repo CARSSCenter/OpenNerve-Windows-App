@@ -35,6 +35,7 @@ namespace controller
         public Form1()
         {
             InitializeComponent();
+            this.FormClosing += Form1_FormClosing;  // wire up quit/close handler
         }
         private static BluetoothLEAdvertisementWatcher watcher;
         private static ulong address = 0;
@@ -52,6 +53,10 @@ namespace controller
         private const byte GET_BLEPARS = 0xF1;
         private const byte SET_BLEPARS = 0xF2;
         private const byte MEASURE_IMPEDANCE = 0xA7;
+        private const byte READ_IPG_LOG = 0xAE;
+        private const byte ERASE_IPG_LOG = 0xAF;
+        private const byte GET_RTC = 0xB0;
+        private const byte SET_RTC = 0xB1;
         private static int PacketLen = 100;
         private static int PacketCnt = 100;
         private double[] EMGdata = new double[PacketLen * PacketCnt]; //10,000
@@ -117,6 +122,12 @@ namespace controller
         private bool useVNBlock = false;
 
         System.Timers.Timer BLEtimer = new System.Timers.Timer();
+
+        // IPG log download state
+        private bool _logDownloadInProgress = false;
+        private bool _logEraseInProgress = false;
+        private bool _pendingDisconnect = false;
+        private readonly List<string> _ipgLogEntries = new();
 
         //For single write queue refactor
         private readonly Channel<byte[]> _txChannel =
@@ -268,10 +279,8 @@ namespace controller
         }
         private void bDisconnect_Click(object sender, EventArgs e)
         {
-            try
-            { Debug.WriteLine("Disconnecting..."); DoDisconnect(); }
-            catch (Exception ex)
-            { Debug.WriteLine($"Disconnect Error: {ex.Message}"); Application.Exit(); }
+            Debug.WriteLine("Disconnecting...");
+            this.Close();  // routes through Form1_FormClosing → log download → erase → DoDisconnect
         }
         private void bGet_Click(object sender, EventArgs e)
         {
@@ -525,7 +534,7 @@ namespace controller
                     if (result.Status == DevicePairingResultStatus.Paired)
                     {
                         Debug.WriteLine("Paired. Waiting for ATT/GATT stabilization...");
-                        await Task.Delay(500);  // 300�800 ms works best
+                        await Task.Delay(500);  // 300�800 ms works best
                         //TODO see if I can remove this to speed up handshake
                     }
                     if (result.Status != DevicePairingResultStatus.Paired)
@@ -1141,14 +1150,19 @@ namespace controller
                     bConnected = true;
                     //Debug.WriteLine("Got BLEPARS, bConnected=" + bConnected);
                     if (BLEtimer.Enabled)
-                    { labelRX.BeginInvoke((Action)(() => labelRX.Text = "Connected+")); }
+                    {
+                        labelRX.BeginInvoke((Action)(() => labelRX.Text = "Connected+"));
+                        StartLogDownload(); // reconnect trigger
+                    }
                     else
                     {
                         labelRX.BeginInvoke((Action)(() => labelRX.Text = "Connected")); Debug.WriteLine("RX Connected");
                         BLEtimer.Interval = 30000; // in milliseconds
                         BLEtimer.Elapsed += BLEtimer_Elapsed;
-                        BLEtimer.AutoReset = true; // retrigger 
+                        BLEtimer.AutoReset = true; // retrigger
                         BLEtimer.Enabled = true;
+                        SetIpgRtc();         // sync PC clock to IPG RTC on first connect
+                        StartLogDownload();  // first-connect trigger
                     }
                     break;
                 case SET_BLEPARS: //Disable whitelist
@@ -1183,6 +1197,48 @@ namespace controller
                     Debug.WriteLine("TX Set Max Amp");
                     Sending(data);
 
+                    break;
+                case READ_IPG_LOG:
+                    if (!_logDownloadInProgress) break;
+                    int ipgPayloadLen = bResponse[1];
+                    if (ipgPayloadLen <= 1) // empty or just status byte = no more entries
+                    {
+                        _logDownloadInProgress = false;
+                        Debug.WriteLine($"--- IPG Log Download Complete ({_ipgLogEntries.Count} entries) ---");
+                        foreach (var ipgEntry in _ipgLogEntries)
+                            Debug.WriteLine("[IPG] " + ipgEntry.TrimEnd('\r', '\n'));
+                        _ipgLogEntries.Clear();
+                        // Erase device log now that we have a local copy
+                        _logEraseInProgress = true;
+                        Debug.WriteLine("--- IPG Log Erase Sent ---");
+                        byte[] eraseCmd = [ERASE_IPG_LOG, 0x00];
+                        Sending(eraseCmd);
+                        // _pendingDisconnect is handled in ERASE_IPG_LOG case
+                    }
+                    else
+                    {
+                        // ASCII entry at bResponse[3]; length = ipgPayloadLen - 1 (skip status byte at [2])
+                        // If entries look garbled, add: Debug.WriteLine("[IPG RAW] " + BitConverter.ToString(bResponse));
+                        string ipgEntry = Encoding.ASCII.GetString(bResponse, 3, ipgPayloadLen - 1);
+                        _ipgLogEntries.Add(ipgEntry);
+                        byte[] nextReq = new byte[9];
+                        nextReq[0] = READ_IPG_LOG;
+                        nextReq[1] = 0x07;
+                        Array.Copy(ParseIpgTimestamp(ipgEntry), 0, nextReq, 2, 7);
+                        Sending(nextReq);
+                    }
+                    break;
+                case ERASE_IPG_LOG:
+                    _logEraseInProgress = false;
+                    Debug.WriteLine("--- IPG Log Erase Complete ---");
+                    if (_pendingDisconnect)
+                    {
+                        _pendingDisconnect = false;
+                        DoDisconnect();
+                    }
+                    break;
+                case SET_RTC:
+                    Debug.WriteLine("--- IPG RTC Set Complete ---");
                     break;
                 default:
                     break;
@@ -1399,7 +1455,16 @@ namespace controller
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             Debug.WriteLine("Closing Form");
-            DoDisconnect();
+            if (BLEDevice != null)
+            {
+                e.Cancel = true;
+                _pendingDisconnect = true;
+                StartLogDownload();  // no-op if already in progress; erase case handles final DoDisconnect
+            }
+            else
+            {
+                DoDisconnect();
+            }
         }
 
         private void txtFname_TextChanged(object sender, EventArgs e)
@@ -1554,7 +1619,54 @@ namespace controller
                 op == STOP_MANUAL_THERAPY ||
                 op == GET_SENSOR ||
                 op == GET_SPARS ||
-                op == SET_BLEPARS;
+                op == SET_BLEPARS ||
+                op == READ_IPG_LOG ||
+                op == ERASE_IPG_LOG ||
+                op == SET_RTC ||
+                op == GET_RTC;
+        }
+
+        private void SetIpgRtc()
+        {
+            DateTime utc = DateTime.UtcNow;
+            Debug.WriteLine($"--- Setting IPG RTC to {utc:yyyy-MM-dd HH:mm:ss} UTC ---");
+            byte[] data = new byte[8];
+            data[0] = SET_RTC;
+            data[1] = 0x06;                      // 6-byte payload
+            data[2] = (byte)(utc.Year - 2000);   // 2-digit year
+            data[3] = (byte)utc.Month;
+            data[4] = (byte)utc.Day;
+            data[5] = (byte)utc.Hour;
+            data[6] = (byte)utc.Minute;
+            data[7] = (byte)utc.Second;
+            Sending(data);
+        }
+
+        private void StartLogDownload()
+        {
+            if (_logDownloadInProgress) return;
+            _logDownloadInProgress = true;
+            _ipgLogEntries.Clear();
+            Debug.WriteLine("--- IPG Log Download Start ---");
+            byte[] data = new byte[9];
+            data[0] = READ_IPG_LOG;
+            data[1] = 0x07; // 7-byte timestamp payload, all zeros = before all entries
+            Sending(data);
+        }
+
+        private static byte[] ParseIpgTimestamp(string entry)
+        {
+            // Format: [20YY-MM-DDThh:mm:ssZ(uuu)]
+            return new byte[]
+            {
+                byte.Parse(entry.Substring(3, 2)),   // YY
+                byte.Parse(entry.Substring(6, 2)),   // MM
+                byte.Parse(entry.Substring(9, 2)),   // DD
+                byte.Parse(entry.Substring(12, 2)),  // hh
+                byte.Parse(entry.Substring(15, 2)),  // mm
+                byte.Parse(entry.Substring(18, 2)),  // ss
+                byte.Parse(entry.Substring(22, 3)),  // uuu
+            };
         }
 
         private void rbSignalMode_CheckedChange(object sender, EventArgs e)
