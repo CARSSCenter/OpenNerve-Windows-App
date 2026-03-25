@@ -63,6 +63,8 @@ namespace controller
             txtFname = new TextBox();
             bSave = new Button();
             bView = new Button();
+            bDownloadLogs = new Button();
+            bClearLogs = new Button();
             rbEMG3 = new RadioButton();
             rbEMG4 = new RadioButton();
             labelV = new System.Windows.Forms.Label();
@@ -659,7 +661,33 @@ namespace controller
             bSave.Text = "Start Saving";
             bSave.UseVisualStyleBackColor = true;
             bSave.Click += bSave_Click;
-            // 
+            //
+            // bDownloadLogs
+            //
+            bDownloadLogs.Enabled = false;
+            bDownloadLogs.Font = new Font("Times New Roman", 14F);
+            bDownloadLogs.Location = new Point(60, 998);
+            bDownloadLogs.Margin = new Padding(0);
+            bDownloadLogs.Name = "bDownloadLogs";
+            bDownloadLogs.Size = new Size(180, 50);
+            bDownloadLogs.TabIndex = 70;
+            bDownloadLogs.Text = "Download Logs";
+            bDownloadLogs.UseVisualStyleBackColor = true;
+            bDownloadLogs.Click += bDownloadLogs_Click;
+            //
+            // bClearLogs
+            //
+            bClearLogs.Enabled = false;
+            bClearLogs.Font = new Font("Times New Roman", 14F);
+            bClearLogs.Location = new Point(248, 998);
+            bClearLogs.Margin = new Padding(0);
+            bClearLogs.Name = "bClearLogs";
+            bClearLogs.Size = new Size(180, 50);
+            bClearLogs.TabIndex = 71;
+            bClearLogs.Text = "Clear Logs";
+            bClearLogs.UseVisualStyleBackColor = true;
+            bClearLogs.Click += bClearLogs_Click;
+            //
             // bView
             // 
             bView.Enabled = false;
@@ -1165,6 +1193,8 @@ namespace controller
             Controls.Add(txtFname);
             Controls.Add(bSave);
             Controls.Add(bView);
+            Controls.Add(bDownloadLogs);
+            Controls.Add(bClearLogs);
             Controls.Add(bGetC2);
             Controls.Add(bSendC2);
             Controls.Add(label9);
@@ -1270,6 +1300,8 @@ namespace controller
         public TextBox txtFname;
         public Button bSave;
         public Button bView;
+        public Button bDownloadLogs;
+        public Button bClearLogs;
         private RadioButton rbEMG3;
         private RadioButton rbEMG4;
         public System.Windows.Forms.Label labelV;

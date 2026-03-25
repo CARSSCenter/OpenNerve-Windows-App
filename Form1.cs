@@ -124,6 +124,7 @@ namespace controller
         System.Timers.Timer BLEtimer = new System.Timers.Timer();
 
         // IPG log download state
+        private bool AutoLogEnabled = false;  // set to true to enable auto-download/erase on connect and quit
         private bool _logDownloadInProgress = false;
         private bool _logEraseInProgress = false;
         private bool _pendingDisconnect = false;
@@ -281,6 +282,21 @@ namespace controller
         {
             Debug.WriteLine("Disconnecting...");
             this.Close();  // routes through Form1_FormClosing → log download → erase → DoDisconnect
+        }
+
+        private void bDownloadLogs_Click(object sender, EventArgs e)
+        {
+            Debug.WriteLine("Manual log download requested");
+            StartLogDownload(eraseAfter: false); // no-op if already in progress (guard inside)
+        }
+
+        private void bClearLogs_Click(object sender, EventArgs e)
+        {
+            if (_logDownloadInProgress || _logEraseInProgress) return;
+            _logEraseInProgress = true;
+            Debug.WriteLine("--- IPG Log Erase Sent (manual) ---");
+            byte[] eraseCmd = [ERASE_IPG_LOG, 0x00];
+            Sending(eraseCmd);
         }
         private void bGet_Click(object sender, EventArgs e)
         {
@@ -1112,6 +1128,8 @@ namespace controller
                             bGetTF.BeginInvoke((Action)(() => bGetTF.Enabled = true));
                             bView.BeginInvoke((Action)(() => bView.Enabled = true));
                             bSave.BeginInvoke((Action)(() => bSave.Enabled = true));
+                            bDownloadLogs.BeginInvoke((Action)(() => bDownloadLogs.Enabled = true));
+                            bClearLogs.BeginInvoke((Action)(() => bClearLogs.Enabled = true));
                             Debug.WriteLine("TX BLE Pars");
                             labelTX.BeginInvoke((Action)(() => labelTX.Text = "BLE Pars"));
                             //byte[] dataIni4 = [GET_HPARS, 0x04, 0x48, 0x50, 0x30, 0x35]; // Get FW Version
@@ -1152,7 +1170,7 @@ namespace controller
                     if (BLEtimer.Enabled)
                     {
                         labelRX.BeginInvoke((Action)(() => labelRX.Text = "Connected+"));
-                        StartLogDownload(); // reconnect trigger
+                        if (AutoLogEnabled) StartLogDownload(); // reconnect trigger
                     }
                     else
                     {
@@ -1162,7 +1180,7 @@ namespace controller
                         BLEtimer.AutoReset = true; // retrigger
                         BLEtimer.Enabled = true;
                         SetIpgRtc();         // sync PC clock to IPG RTC on first connect
-                        StartLogDownload();  // first-connect trigger
+                        if (AutoLogEnabled) StartLogDownload();  // first-connect trigger
                     }
                     break;
                 case SET_BLEPARS: //Disable whitelist
@@ -1205,21 +1223,27 @@ namespace controller
                     {
                         _logDownloadInProgress = false;
                         Debug.WriteLine($"--- IPG Log Download Complete ({_ipgLogEntries.Count} entries) ---");
-                        foreach (var ipgEntry in _ipgLogEntries)
-                            Debug.WriteLine("[IPG] " + ipgEntry.TrimEnd('\r', '\n'));
                         _ipgLogEntries.Clear();
-                        // Erase device log now that we have a local copy
-                        _logEraseInProgress = true;
-                        Debug.WriteLine("--- IPG Log Erase Sent ---");
-                        byte[] eraseCmd = [ERASE_IPG_LOG, 0x00];
-                        Sending(eraseCmd);
-                        // _pendingDisconnect is handled in ERASE_IPG_LOG case
+                        if (_eraseAfterDownload)
+                        {
+                            // Erase device log now that we have a local copy
+                            _logEraseInProgress = true;
+                            Debug.WriteLine("--- IPG Log Erase Sent ---");
+                            byte[] eraseCmd = [ERASE_IPG_LOG, 0x00];
+                            Sending(eraseCmd);
+                            // _pendingDisconnect is handled in ERASE_IPG_LOG case
+                        }
+                        else if (_pendingDisconnect)
+                        {
+                            _pendingDisconnect = false;
+                            DoDisconnect();
+                        }
                     }
                     else
                     {
                         // ASCII entry at bResponse[3]; length = ipgPayloadLen - 1 (skip status byte at [2])
-                        // If entries look garbled, add: Debug.WriteLine("[IPG RAW] " + BitConverter.ToString(bResponse));
                         string ipgEntry = Encoding.ASCII.GetString(bResponse, 3, ipgPayloadLen - 1);
+                        Debug.WriteLine("[IPG] " + ipgEntry.TrimEnd('\r', '\n')); // print immediately
                         _ipgLogEntries.Add(ipgEntry);
                         byte[] nextReq = new byte[9];
                         nextReq[0] = READ_IPG_LOG;
@@ -1455,7 +1479,7 @@ namespace controller
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             Debug.WriteLine("Closing Form");
-            if (BLEDevice != null)
+            if (BLEDevice != null && AutoLogEnabled)
             {
                 e.Cancel = true;
                 _pendingDisconnect = true;
@@ -1642,10 +1666,13 @@ namespace controller
             Sending(data);
         }
 
-        private void StartLogDownload()
+        private bool _eraseAfterDownload = false;
+
+        private void StartLogDownload(bool eraseAfter = true)
         {
             if (_logDownloadInProgress) return;
             _logDownloadInProgress = true;
+            _eraseAfterDownload = eraseAfter;
             _ipgLogEntries.Clear();
             Debug.WriteLine("--- IPG Log Download Start ---");
             byte[] data = new byte[9];
