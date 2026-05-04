@@ -1408,12 +1408,12 @@ namespace controller
                         {
                             Xdata[di] = 0.1 * (CurX + dIncX10 * di); //from ds to s
                             Ydata[di] = RAWdata.Skip(DecFactor * (di)).Take(DecFactor).ToArray().Average();
-                            Debug.WriteLine("X=" + Xdata[di].ToString() + ", Y=" + Ydata[di].ToString() );
+                            //Debug.WriteLine("X=" + Xdata[di].ToString() + ", Y=" + Ydata[di].ToString() );
                         }
 
                         if (bResponse[3] == AddrGtSp[0])
                         {
-                            Debug.WriteLine("Plotting " + bResponse[3].ToString());
+                            // Debug.WriteLine("Plotting " + bResponse[3].ToString());
                             formsPlot1.BeginInvoke((Action)(() => {
                                 formsPlot1.Plot.Add.SignalXY(Xdata, Ydata, Colors.Red);
                                 formsPlot1.Plot.Axes.AutoScale();
@@ -1422,13 +1422,13 @@ namespace controller
                         }
                         else //AddrGtSp[1]
                         {
-                            Debug.WriteLine("Plotting");
+                            //Debug.WriteLine("Plotting");
                             formsPlot1.BeginInvoke((Action)(() => formsPlot1.Plot.Add.SignalXY(Xdata, Ydata, Colors.Blue))); 
                         }
 
                         formsPlot1.BeginInvoke((Action)(() => formsPlot1.Refresh()));
                         labelV.BeginInvoke((Action)(() => labelV.Text = dLength.ToString())); //+ ":" + (Math.Round(Xdata[0], 1)).ToString() + "-" + (Math.Round(Xdata[dLength - 1], 1)).ToString()));
-                        Debug.WriteLine("Data Length: " + labelV.Text);
+                        //Debug.WriteLine("Data Length: " + labelV.Text);
                         //Debug.WriteLine("RX Data+");
                         labelRX.BeginInvoke((Action)(() => labelRX.Text = "Data+"));
                         
