@@ -214,9 +214,22 @@ namespace controller
                 bView.Text = "Start Viewing";
                 bSave.Enabled = true;
                 groupSignalMode.Enabled = true;
-                byte[] data = [GET_SENSOR, 0x01, 0x00];
-                Sending(data);
                 labelTX.Text = "Stopped Data";
+
+                byte EMGch = (byte)CurrentSignalMode;
+                if (EMGch == 5)
+                {
+                    Debug.WriteLine("Stopping XLR");
+                    XLtimer.Enabled = false;
+                    byte[] data = [ACC_STOP, 1, AddrGtSp[XLN]];
+                    Sending(data);
+                }
+                else
+                {
+                    Debug.WriteLine("Stopping Sensor");
+                    byte[] data = { GET_SENSOR, 0x01, 0x00 };
+                    Sending(data);
+                }
             }
         }
         private void bSave_Click(object sender, EventArgs e)
@@ -1406,16 +1419,6 @@ namespace controller
                                 formsPlot1.Plot.Axes.AutoScale();
                                 formsPlot1.Refresh();
                             }));
-                            /*formsPlot1.BeginInvoke((Action)(() =>
-                            {
-                                formsPlot1.Plot.Clear();
-                                formsPlot1.Plot.Add.Signal(yPlot, dtPlot);
-                                // Optional: axes labels
-                                formsPlot1.Plot.XLabel("Time (s)");
-                                formsPlot1.Plot.YLabel("ECG (a.u.)");
-                                formsPlot1.Plot.Axes.AutoScale();
-                                formsPlot1.Refresh();
-                            }));*/
                         }
                         else //AddrGtSp[1]
                         {
