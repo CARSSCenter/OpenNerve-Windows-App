@@ -1327,6 +1327,7 @@ namespace controller
                 case ACC_START:
                     if (bResponse[2] == 0) //Status OK
                     {
+                        Debug.WriteLine("XLR Status ok");
                         XLtimer.Elapsed += XLtimer_Elapsed;
                         XLtimer.AutoReset = true; // retrigger
                         XLtimer.Interval = 1050; //  msec
@@ -1344,6 +1345,7 @@ namespace controller
                     }
                     else //Status not OK
                     {
+                        Debug.WriteLine("XLR Status Not Ok: " + bResponse[2]);
                         bView.BeginInvoke((Action)(() => bView.Text = "Stop Viewing"));
                         Application.DoEvents();
                         bView.BeginInvoke((Action)(() => bView.PerformClick()));
@@ -1380,6 +1382,7 @@ namespace controller
                         double[] RAWdata = new double[dLength * DecFactor];
                         double[] Xdata = new double[dLength];
                         double[] Ydata = new double[dLength];
+                        
                         for (int i = 0; i < dLength * DecFactor; i++)
                         {
                             RAWdata[i] = Math.Sqrt(
@@ -1392,20 +1395,37 @@ namespace controller
                         {
                             Xdata[di] = 0.1 * (CurX + dIncX10 * di); //from ds to s
                             Ydata[di] = RAWdata.Skip(DecFactor * (di)).Take(DecFactor).ToArray().Average();
+                            Debug.WriteLine("X=" + Xdata[di].ToString() + ", Y=" + Ydata[di].ToString() );
                         }
 
                         if (bResponse[3] == AddrGtSp[0])
-                        { 
-                            formsPlot1.BeginInvoke((Action)(() => formsPlot1.Plot.Add.SignalXY(Xdata, Ydata, Colors.Red))); 
+                        {
+                            Debug.WriteLine("Plotting " + bResponse[3].ToString());
+                            formsPlot1.BeginInvoke((Action)(() => {
+                                formsPlot1.Plot.Add.SignalXY(Xdata, Ydata, Colors.Red);
+                                formsPlot1.Plot.Axes.AutoScale();
+                                formsPlot1.Refresh();
+                            }));
+                            /*formsPlot1.BeginInvoke((Action)(() =>
+                            {
+                                formsPlot1.Plot.Clear();
+                                formsPlot1.Plot.Add.Signal(yPlot, dtPlot);
+                                // Optional: axes labels
+                                formsPlot1.Plot.XLabel("Time (s)");
+                                formsPlot1.Plot.YLabel("ECG (a.u.)");
+                                formsPlot1.Plot.Axes.AutoScale();
+                                formsPlot1.Refresh();
+                            }));*/
                         }
                         else //AddrGtSp[1]
-                        { 
+                        {
+                            Debug.WriteLine("Plotting");
                             formsPlot1.BeginInvoke((Action)(() => formsPlot1.Plot.Add.SignalXY(Xdata, Ydata, Colors.Blue))); 
                         }
-                        
+
                         formsPlot1.BeginInvoke((Action)(() => formsPlot1.Refresh()));
                         labelV.BeginInvoke((Action)(() => labelV.Text = dLength.ToString())); //+ ":" + (Math.Round(Xdata[0], 1)).ToString() + "-" + (Math.Round(Xdata[dLength - 1], 1)).ToString()));
-                        Debug.WriteLine(labelV.Text);
+                        Debug.WriteLine("Data Length: " + labelV.Text);
                         //Debug.WriteLine("RX Data+");
                         labelRX.BeginInvoke((Action)(() => labelRX.Text = "Data+"));
                         
@@ -1419,7 +1439,7 @@ namespace controller
                     {
                         if (bResponse[2] == 1) { Debug.WriteLine("Buffer overflow"); }
                         else if (bResponse[2] == 2) { Debug.WriteLine("Comm Error"); }
-                        else { Debug.WriteLine("data: " + (bResponse.Length - 12).ToString() + " < " + (bResponse[1] - 7).ToString()); }
+                        else { Debug.WriteLine("Bad data: " + (bResponse.Length - 12).ToString() + " < " + (bResponse[1] - 7).ToString()); }
                     }
                     break;
                 case ACC_STOP:
