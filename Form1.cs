@@ -105,13 +105,29 @@ namespace controller
         private Task processingTask;
         private Task writingTask;
 
+        //I2C variables
+        private readonly byte[] AddrSt = [0x18, 0x19];
+        private readonly byte[] AddrGtSp = [0x18, 0x19];
+        private const int XLF = 10;
+        private const int DecFactor = XLF / 5;
+        private const int dIncX10 = 2;
+        private const byte ACC_START = 0x47;
+        private const byte ACC_GET = 0x48;
+        private const byte ACC_STOP = 0x49;
+        private int XLN;
+        private bool bXLFirst;
+        private int StartX; //initial X value
+        System.Timers.Timer XLtimer = new System.Timers.Timer();
+        private int PlotLen = 60; //Seconds to plot for
+
         //EMG / ECG / ENG etc.
         private enum SignalMode
         {
             EMG1 = 3,
             EMG2 = 4,
             ECGH = 1,
-            ECGR = 2
+            ECGR = 2,
+            XL = 5
         }
         private SignalMode CurrentSignalMode = SignalMode.ECGR;
 
@@ -147,7 +163,7 @@ namespace controller
             _txCts = new CancellationTokenSource();
             _txLoopTask = Task.Run(() => TxLoopAsync(_txCts.Token));
         }
-        
+
         private async Task StopTxLoopAsync() //Stop the write loop
         {
             if (_txCts == null) return;
@@ -157,6 +173,12 @@ namespace controller
             finally { _txCts = null; _txLoopTask = null; }
         }
 
+        private void XLtimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            byte[] data;
+            data = [ACC_GET, 1, AddrGtSp[XLN]];
+            Sending(data);
+        }
 
         private void bView_Click(object sender, EventArgs e)
         {
@@ -166,13 +188,24 @@ namespace controller
                 bSave.Enabled = false;
                 groupSignalMode.Enabled = false;
                 byte EMGch = (byte)CurrentSignalMode;
+
+                formsPlot1.Plot.Clear();
+                formsPlot1.Plot.Axes.SetLimitsX(0, PlotLen); //sec
                 formsPlot1.Plot.Axes.SetLimitsY(-80, 80);
 
                 byte[] bSampleRate = BitConverter.GetBytes(sampleRate);
-
-                byte[] data = [GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3]];
-                //byte[] data = [GET_SENSOR, 1, EMGch];
-                Sending(data);
+                if (EMGch == 5)
+                {
+                    bXLFirst = true;
+                    byte[] data = [ACC_START, 2, XLF, AddrSt[XLN]];
+                    Sending(data);
+                }
+                else
+                {
+                    byte[] data = [GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3]];
+                    Sending(data);
+                }
+                
                 labelTX.Text = "Getting Data";
                 Debug.WriteLine("TX Getting Data");
             }
@@ -181,15 +214,32 @@ namespace controller
                 bView.Text = "Start Viewing";
                 bSave.Enabled = true;
                 groupSignalMode.Enabled = true;
-                byte[] data = [GET_SENSOR, 0x01, 0x00];
-                Sending(data);
                 labelTX.Text = "Stopped Data";
+
+                byte EMGch = (byte)CurrentSignalMode;
+                if (EMGch == 5)
+                {
+                    Debug.WriteLine("Stopping XLR");
+                    XLtimer.Enabled = false;
+                    byte[] data = [ACC_STOP, 1, AddrGtSp[XLN]];
+                    Sending(data);
+                }
+                else
+                {
+                    Debug.WriteLine("Stopping Sensor");
+                    byte[] data = { GET_SENSOR, 0x01, 0x00 };
+                    Sending(data);
+                }
             }
         }
         private void bSave_Click(object sender, EventArgs e)
         {
             if (!isSaving)
             {
+                formsPlot1.Plot.Clear();
+                formsPlot1.Plot.Axes.SetLimitsX(0, PlotLen); //sec
+                formsPlot1.Plot.Axes.SetLimitsY(-80, 80);
+
                 // --- START SAVING ---
                 bSave.Text = "Stop Saving";
                 bView.Enabled = false;
@@ -235,8 +285,20 @@ namespace controller
                 byte EMGch = (byte)CurrentSignalMode;   //= rbEMG1.Checked ? (byte)4 : (byte)4;
 
                 byte[] bSampleRate = BitConverter.GetBytes(sampleRate);
-                byte[] data = { GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3] };
-                Sending(data);
+
+                if (EMGch == 5)
+                {
+                    bXLFirst = true;
+                    byte[] data = [ACC_START, 2, XLF, AddrSt[XLN]];
+                    Sending(data);
+                }
+                else
+                {
+                    byte[] data = [GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3]];
+                    Sending(data);
+                }
+                //byte[] data = { GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3] };
+                
             }
             else
             {
@@ -248,8 +310,19 @@ namespace controller
                 isSaving = false;
 
                 // Stop device streaming
-                byte[] data = { GET_SENSOR, 0x01, 0x00 };
-                Sending(data);
+                byte EMGch = (byte)CurrentSignalMode;
+                if (EMGch == 5)
+                {
+                    XLtimer.Enabled = false;
+                    byte[] data = [ACC_STOP, 1, AddrGtSp[XLN]];
+                    Sending(data);
+                }
+                else
+                {
+                    byte[] data = { GET_SENSOR, 0x01, 0x00 };
+                    Sending(data);
+                }
+                
 
                 // Close CSV file
                 csvWriter?.Flush();
@@ -1054,25 +1127,25 @@ namespace controller
                             case 0x37: // Get VNB frequency
                                 Debug.WriteLine("VNB Frequency: " + (((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1).ToString());
                                 txtVfreq.BeginInvoke((Action)(() => txtVfreq.Text = (Math.Round((((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1), 1)).ToString()));
-                              
+
                                 break;
                             case 0x38: // Get VNB on time
                                 Debug.WriteLine("VNB On Time: " + (((int)bResponse[8] * 256 + (int)bResponse[7])).ToString());
                                 txtVon.BeginInvoke((Action)(() => txtVon.Text = (Math.Round((((int)bResponse[8] * 256.0 + (int)bResponse[7])), 1)).ToString()));
-                               
+
                                 break;
                             case 0x39: // Get VNB off time
 
                                 Debug.WriteLine("VNB Off Time: " + (((int)bResponse[8] * 256 + (int)bResponse[7])).ToString());
                                 txtVoff.BeginInvoke((Action)(() => txtVoff.Text = (Math.Round((((int)bResponse[8] * 256.0 + (int)bResponse[7])), 1)).ToString()));
-                                 break;
+                                break;
                             case 0x31: // Get VNB cathode
                                 txtV1.BeginInvoke((Action)(() => txtV1.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
-                                
+
                                 break;
                             case 0x32: // Get VNB anode
                                 txtV2.BeginInvoke((Action)(() => txtV2.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
-                               
+
                                 break;
                             case 0x33:
                                 Debug.WriteLine("Stim Max Safe Amp: " + (((int)bResponse[8] * 256 + (int)bResponse[7] * 0.1).ToString()));
@@ -1140,7 +1213,7 @@ namespace controller
                             PMode = 0;
                             Debug.WriteLine("RX Set Max Amp for Impedance");
                             labelRX.BeginInvoke((Action)(() => labelRX.Text = "Set MaxA"));
-                            
+
                             byte[] dataZ = [MEASURE_IMPEDANCE, 0x00]; // Get Impedance
                             Debug.WriteLine("TX Get Impedance");
                             labelTX.BeginInvoke((Action)(() => labelTX.Text = "Get Impedance"));
@@ -1263,6 +1336,118 @@ namespace controller
                     break;
                 case SET_RTC:
                     Debug.WriteLine("--- IPG RTC Set Complete ---");
+                    break;
+                case ACC_START:
+                    if (bResponse[2] == 0) //Status OK
+                    {
+                        Debug.WriteLine("XLR Status ok");
+                        XLtimer.Elapsed += XLtimer_Elapsed;
+                        XLtimer.AutoReset = true; // retrigger
+                        XLtimer.Interval = 1050; //  msec
+                        XLtimer.Enabled = true;
+                        if (bResponse[3] == AddrGtSp[0])
+                        {
+                            labelRX.BeginInvoke((Action)(() => labelRX.Text = "Started XL-G"));
+                            Debug.WriteLine("RX Started XL-G");
+                        }
+                        else if (bResponse[3] == AddrGtSp[1])
+                        {
+                            labelRX.BeginInvoke((Action)(() => labelRX.Text = "Started XL-V"));
+                            Debug.WriteLine("RX Started XL-V");
+                        }
+                    }
+                    else //Status not OK
+                    {
+                        Debug.WriteLine("XLR Status Not Ok: " + bResponse[2]);
+                        bView.BeginInvoke((Action)(() => bView.Text = "Stop Viewing"));
+                        Application.DoEvents();
+                        bView.BeginInvoke((Action)(() => bView.PerformClick()));
+                        if (bResponse[2] == 2) { Debug.WriteLine("Start Comm Error"); }
+                        else { Debug.WriteLine("Start Error: " + bResponse[2].ToString()); }
+                    }
+                    break;
+                case ACC_GET:
+                    if ((bResponse[2] == 0) && (bResponse.Length >= 72)) // data is present
+                    {
+                        int dLength = (bResponse.Length - 12) / 6 / DecFactor; //12=10+CRC16
+                        int CurX = 0; //from ms to ds using 0.01*
+
+                        if (bXLFirst) //first record
+                        { 
+                            StartX = (int)(0.01 * BitConverter.ToUInt32(bResponse, 4)); 
+                            bXLFirst = false; }
+                        else
+                        { 
+                            CurX = (int)(0.01 * BitConverter.ToUInt32(bResponse, 4)) - StartX; 
+                        }
+                       
+                        if (dLength > PlotLen - (int)(0.1 * CurX)) { 
+                            dLength = PlotLen - (int)(0.1 * CurX); 
+                        }
+
+                        if (dLength <= 0) //plot full
+                        {
+                            bView.BeginInvoke((Action)(() => bView.PerformClick()));
+                            Debug.WriteLine("RX Data Done");
+                            break;
+                        }
+
+                        double[] RAWdata = new double[dLength * DecFactor];
+                        double[] Xdata = new double[dLength];
+                        double[] Ydata = new double[dLength];
+                        
+                        for (int i = 0; i < dLength * DecFactor; i++)
+                        {
+                            RAWdata[i] = Math.Sqrt(
+                            Math.Pow(Convert.ToDouble((unchecked((short)((bResponse[i * 6 + 11] << 8) + bResponse[i * 6 + 10])) >> 6)), 2) +
+                            Math.Pow(Convert.ToDouble((unchecked((short)((bResponse[i * 6 + 13] << 8) + bResponse[i * 6 + 12])) >> 6)), 2) +
+                            Math.Pow(Convert.ToDouble((unchecked((short)((bResponse[i * 6 + 15] << 8) + bResponse[i * 6 + 14])) >> 6)), 2));
+                        }
+
+                        for (int di = 0; di < dLength; di++)
+                        {
+                            Xdata[di] = 0.1 * (CurX + dIncX10 * di); //from ds to s
+                            Ydata[di] = RAWdata.Skip(DecFactor * (di)).Take(DecFactor).ToArray().Average();
+                            //Debug.WriteLine("X=" + Xdata[di].ToString() + ", Y=" + Ydata[di].ToString() );
+                        }
+
+                        if (bResponse[3] == AddrGtSp[0])
+                        {
+                            // Debug.WriteLine("Plotting " + bResponse[3].ToString());
+                            formsPlot1.BeginInvoke((Action)(() => {
+                                formsPlot1.Plot.Add.SignalXY(Xdata, Ydata, Colors.Red);
+                                formsPlot1.Plot.Axes.AutoScale();
+                                formsPlot1.Refresh();
+                            }));
+                        }
+                        else //AddrGtSp[1]
+                        {
+                            //Debug.WriteLine("Plotting");
+                            formsPlot1.BeginInvoke((Action)(() => formsPlot1.Plot.Add.SignalXY(Xdata, Ydata, Colors.Blue))); 
+                        }
+
+                        formsPlot1.BeginInvoke((Action)(() => formsPlot1.Refresh()));
+                        labelV.BeginInvoke((Action)(() => labelV.Text = dLength.ToString())); //+ ":" + (Math.Round(Xdata[0], 1)).ToString() + "-" + (Math.Round(Xdata[dLength - 1], 1)).ToString()));
+                        //Debug.WriteLine("Data Length: " + labelV.Text);
+                        //Debug.WriteLine("RX Data+");
+                        labelRX.BeginInvoke((Action)(() => labelRX.Text = "Data+"));
+                        
+                        if (isSaving) //Save to CSV
+                        {
+                            csvWriter.WriteLine((XLN + 1) + "," + (0.1 * CurX) + "," + dLength + "," + string.Join(",", Ydata.Select(b => b.ToString("F3"))));
+                            csvWriter.Flush();
+                        }
+                    }
+                    else //bad status or no data
+                    {
+                        if (bResponse[2] == 1) { Debug.WriteLine("Buffer overflow"); }
+                        else if (bResponse[2] == 2) { Debug.WriteLine("Comm Error"); }
+                        else { Debug.WriteLine("Bad data: " + (bResponse.Length - 12).ToString() + " < " + (bResponse[1] - 7).ToString()); }
+                    }
+                    break;
+                case ACC_STOP:
+                    labelRX.BeginInvoke((Action)(() => labelRX.Text = "Stopped XL"));
+                    Debug.WriteLine("RX Stopped XL");
                     break;
                 default:
                     break;
@@ -1739,8 +1924,12 @@ namespace controller
                 DecValue = 10;
                 DECPeriod = (int)(1000 * DecValue / sampleRate);
             }
+            else if (rb == rbXLR)
+            {
+                CurrentSignalMode = SignalMode.XL;
+            }
 
-            Debug.WriteLine($"Signal mode changed to {CurrentSignalMode}");
+                Debug.WriteLine($"Signal mode changed to {CurrentSignalMode}");
         }
 
         private void ProcessPlotSave(double[] raw)
@@ -2031,7 +2220,7 @@ namespace controller
 
             //Send command to change max safe amplitude to 0.5mA
             byte st = (byte)(Convert.ToDecimal(0.5 * 10));  //Max safe amp of 0.5, multiply by 10 when sending byte
-            byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x33, st, 0x00]; 
+            byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x33, st, 0x00];
             Debug.WriteLine("TX Set Max Amp");
             Sending(data);
 
@@ -2041,7 +2230,7 @@ namespace controller
 
         private void bGetVamp_Click(object sender, EventArgs e)
         {
-            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x35]; 
+            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x35];
             Debug.WriteLine("TX Get Params");
             labelTX.Text = "Get Params";
             labelRX.Text = "";
@@ -2052,7 +2241,7 @@ namespace controller
 
         private void bGetVfreq_Click(object sender, EventArgs e)
         {
-            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x37]; 
+            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x37];
             Debug.WriteLine("TX Get Params");
             labelTX.Text = "Get Params";
             labelRX.Text = "";
@@ -2063,7 +2252,7 @@ namespace controller
 
         private void bGetVon_Click(object sender, EventArgs e)
         {
-            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x38]; 
+            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x38];
             Debug.WriteLine("TX Get Params");
             labelTX.Text = "Get Params";
             labelRX.Text = "";
@@ -2085,7 +2274,7 @@ namespace controller
 
         private void bGetV1_Click(object sender, EventArgs e)
         {
-            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x31]; 
+            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x31];
             Debug.WriteLine("TX Get Params");
             labelTX.Text = "Get Params";
             labelRX.Text = "";
@@ -2096,7 +2285,7 @@ namespace controller
 
         private void bGetV2_Click(object sender, EventArgs e)
         {
-            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x32]; 
+            byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x32];
             Debug.WriteLine("TX Get Params");
             labelTX.Text = "Get Params";
             labelRX.Text = "";
@@ -2205,10 +2394,11 @@ namespace controller
             {
                 useVNBlock = true;
                 groupSineWave.Enabled = true;
-            } else
+            }
+            else
             {
                 useVNBlock = false;
-                groupSineWave.Enabled= false;
+                groupSineWave.Enabled = false;
             }
         }
 
@@ -2253,6 +2443,7 @@ namespace controller
 
             return payload;
         }
+
     }
 
     //A class for hashing and signing a private key

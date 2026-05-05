@@ -103,6 +103,7 @@ namespace controller
             bStimMax = new Button();
             bZmin = new Button();
             ckVNB = new CheckBox();
+            rbXLR = new RadioButton();
             groupSignalMode.SuspendLayout();
             groupSineWave.SuspendLayout();
             SuspendLayout();
@@ -661,33 +662,7 @@ namespace controller
             bSave.Text = "Start Saving";
             bSave.UseVisualStyleBackColor = true;
             bSave.Click += bSave_Click;
-            //
-            // bDownloadLogs
-            //
-            bDownloadLogs.Enabled = false;
-            bDownloadLogs.Font = new Font("Times New Roman", 14F);
-            bDownloadLogs.Location = new Point(60, 998);
-            bDownloadLogs.Margin = new Padding(0);
-            bDownloadLogs.Name = "bDownloadLogs";
-            bDownloadLogs.Size = new Size(180, 50);
-            bDownloadLogs.TabIndex = 70;
-            bDownloadLogs.Text = "Download Logs";
-            bDownloadLogs.UseVisualStyleBackColor = true;
-            bDownloadLogs.Click += bDownloadLogs_Click;
-            //
-            // bClearLogs
-            //
-            bClearLogs.Enabled = false;
-            bClearLogs.Font = new Font("Times New Roman", 14F);
-            bClearLogs.Location = new Point(248, 998);
-            bClearLogs.Margin = new Padding(0);
-            bClearLogs.Name = "bClearLogs";
-            bClearLogs.Size = new Size(180, 50);
-            bClearLogs.TabIndex = 71;
-            bClearLogs.Text = "Clear Logs";
-            bClearLogs.UseVisualStyleBackColor = true;
-            bClearLogs.Click += bClearLogs_Click;
-            //
+            // 
             // bView
             // 
             bView.Enabled = false;
@@ -700,6 +675,32 @@ namespace controller
             bView.Text = "Start Viewing";
             bView.UseVisualStyleBackColor = true;
             bView.Click += bView_Click;
+            // 
+            // bDownloadLogs
+            // 
+            bDownloadLogs.Enabled = false;
+            bDownloadLogs.Font = new Font("Times New Roman", 14F);
+            bDownloadLogs.Location = new Point(60, 998);
+            bDownloadLogs.Margin = new Padding(0);
+            bDownloadLogs.Name = "bDownloadLogs";
+            bDownloadLogs.Size = new Size(180, 50);
+            bDownloadLogs.TabIndex = 70;
+            bDownloadLogs.Text = "Download Logs";
+            bDownloadLogs.UseVisualStyleBackColor = true;
+            bDownloadLogs.Click += bDownloadLogs_Click;
+            // 
+            // bClearLogs
+            // 
+            bClearLogs.Enabled = false;
+            bClearLogs.Font = new Font("Times New Roman", 14F);
+            bClearLogs.Location = new Point(248, 998);
+            bClearLogs.Margin = new Padding(0);
+            bClearLogs.Name = "bClearLogs";
+            bClearLogs.Size = new Size(180, 50);
+            bClearLogs.TabIndex = 71;
+            bClearLogs.Text = "Clear Logs";
+            bClearLogs.UseVisualStyleBackColor = true;
+            bClearLogs.Click += bClearLogs_Click;
             // 
             // rbEMG3
             // 
@@ -740,15 +741,17 @@ namespace controller
             // 
             // groupSignalMode
             // 
+            groupSignalMode.Controls.Add(rbXLR);
             groupSignalMode.Controls.Add(rbEMG3);
             groupSignalMode.Controls.Add(rbEMG1);
             groupSignalMode.Controls.Add(rbEMG4);
             groupSignalMode.Controls.Add(rbEMG2);
             groupSignalMode.Location = new Point(196, 0);
             groupSignalMode.Name = "groupSignalMode";
-            groupSignalMode.Size = new Size(61, 217);
+            groupSignalMode.Size = new Size(109, 217);
             groupSignalMode.TabIndex = 72;
             groupSignalMode.TabStop = false;
+            //groupSignalMode.Enter += groupSignalMode_Enter;
             // 
             // getImp
             // 
@@ -1176,6 +1179,18 @@ namespace controller
             ckVNB.UseVisualStyleBackColor = true;
             ckVNB.CheckedChanged += ckVNB_CheckedChanged;
             // 
+            // rbXLR
+            // 
+            rbXLR.AutoSize = true;
+            rbXLR.CheckAlign = ContentAlignment.BottomCenter;
+            rbXLR.Location = new Point(61, 172);
+            rbXLR.Name = "rbXLR";
+            rbXLR.Size = new Size(38, 40);
+            rbXLR.TabIndex = 71;
+            rbXLR.Text = "XLR";
+            rbXLR.UseVisualStyleBackColor = true;
+            rbXLR.CheckedChanged += rbSignalMode_CheckedChange;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -1340,5 +1355,6 @@ namespace controller
         public TextBox txtMaxVNB;
         public System.Windows.Forms.Label label17;
         private CheckBox ckVNB;
+        private RadioButton rbXLR;
     }
 }
