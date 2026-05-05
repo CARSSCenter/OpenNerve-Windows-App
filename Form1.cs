@@ -27,6 +27,7 @@ using System.Security.Cryptography;
 //For single write queue refactor
 using System.Threading.Channels;
 using System.Threading;
+using Windows.ApplicationModel.ConversationalAgent;
 
 namespace controller
 {
@@ -120,28 +121,28 @@ namespace controller
         System.Timers.Timer XLtimer = new System.Timers.Timer();
 
         // XLR rolling display buffer
-        private const int XlrDisplaySec  = 30;
+        private const int XlrDisplaySec = 30;
         private const int XlrDisplayRate = 5;  // Hz (dIncX10=2 → 0.2 s/sample)
-        private const int XlrBufSize     = XlrDisplaySec * XlrDisplayRate; // 150 entries
+        private const int XlrBufSize = XlrDisplaySec * XlrDisplayRate; // 150 entries
         private double[] _xlrTimes = new double[XlrBufSize];
-        private double[] _xlrMags  = new double[XlrBufSize];
-        private int _xlrHead  = 0;
+        private double[] _xlrMags = new double[XlrBufSize];
+        private int _xlrHead = 0;
         private int _xlrCount = 0;
 
         private int PlotLen = 60; //Seconds to plot for
 
         // Rolling display buffer
         private double[] _rollBuf;
-        private int      _rollHead  = 0;
-        private int      _rollCount = 0;
+        private int _rollHead = 0;
+        private int _rollCount = 0;
 
         // DC tracking (EMA — primes the HP filter at startup to avoid large transient)
-        private double       _dcEstimate = 0.0;
-        private const double DcAlpha     = 0.001;
+        private double _dcEstimate = 0.0;
+        private const double DcAlpha = 0.001;
 
         // Persistent biquad filter states (reset in ResetSignalState)
-        private BiquadState _hpFilter    = new BiquadState();
-        private BiquadState _lpFilter    = new BiquadState();
+        private BiquadState _hpFilter = new BiquadState();
+        private BiquadState _lpFilter = new BiquadState();
         private BiquadState _notchFilter = new BiquadState();
 
         //EMG / ECG / ENG etc.
@@ -206,17 +207,55 @@ namespace controller
 
         private void bView_Click(object sender, EventArgs e)
         {
-            if (bView.Text == "Start Viewing")
+            if (bView.Text == "Start Measuring")
             {
-                bView.Text = "Stop Viewing";
-                bSave.Enabled = false;
+                bView.Text = "Stop Measuring";
+                //bSave.Enabled = false;
                 groupSignalMode.Enabled = false;
+                chkSave.Enabled = false;
                 byte EMGch = (byte)CurrentSignalMode;
 
                 if (EMGch != 5) ResetSignalState();   // allocate buffer + reset filters
 
                 formsPlot1.Plot.Clear();
                 formsPlot1.Plot.Axes.SetLimitsX(0, PlotLen); //sec (PlotLen set by ResetSignalState)
+
+                if (isSaving)
+                {
+                    string dateStr = DateTime.Now.ToString("yyyy-MM-dd");
+                    string timeStr = DateTime.Now.ToString("HH:mm:ss");
+
+                    // ----- Build filename from the textbox -----
+                    string fname = txtFname.Text.Trim();
+                    if (string.IsNullOrWhiteSpace(fname))
+                    {
+                        fname = "Data_" + dateStr + timeStr;
+                    }
+                    if (!fname.EndsWith(".csv"))
+                        fname += ".csv";
+
+                    string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                    string fullPath = Path.Combine(desktop, fname);
+
+                    csvWriter = new StreamWriter(fullPath, append: false);
+
+                    // ----- Write file header -----
+                    double effectiveFs = sampleRate / (double)DecValue;   // DECdata sampling rate
+                    double df = effectiveFs / FFTsize; // frequency bin spacing
+                    double fmax = effectiveFs / 2.0;
+
+                    csvWriter.WriteLine($"Date,{dateStr}");
+                    csvWriter.WriteLine($"Start Time,{timeStr}");
+                    csvWriter.WriteLine($"Signal Type,{CurrentSignalMode.ToString()}");
+                    csvWriter.WriteLine($"Sample Rate (raw),{sampleRate}");
+                    csvWriter.WriteLine($"Decimation Factor,{DecValue}");
+                    csvWriter.WriteLine($"Effective Fs (after DEC),{effectiveFs}");
+                    csvWriter.WriteLine($"FFT size,{FFTsize}");
+                    csvWriter.WriteLine($"Frequency bin spacing (Hz),{df}");
+                    csvWriter.WriteLine($"FFT Max Frequency (Hz),{fmax}");
+                    csvWriter.WriteLine("----------------------------------------------------");
+                    csvWriter.Flush();
+                }
 
                 byte[] bSampleRate = BitConverter.GetBytes(sampleRate);
                 if (EMGch == 5)
@@ -236,9 +275,10 @@ namespace controller
             }
             else
             {
-                bView.Text = "Start Viewing";
-                bSave.Enabled = true;
+                bView.Text = "Start Measuring";
+                //bSave.Enabled = true;
                 groupSignalMode.Enabled = true;
+                chkSave.Enabled = true;
                 labelTX.Text = "Stopped Data";
 
                 byte EMGch = (byte)CurrentSignalMode;
@@ -255,8 +295,24 @@ namespace controller
                     byte[] data = { GET_SENSOR, 0x01, 0x00 };
                     Sending(data);
                 }
+
+                if (isSaving)
+                {
+                    // --- STOP SAVING ---
+                    //bSave.Text = "Start Saving";
+                    bView.Enabled = true;
+                    groupSignalMode.Enabled = true;
+                    labelTX.Text = "Stopped Data";
+                    isSaving = false;
+
+                    // Close CSV file
+                    csvWriter?.Flush();
+                    csvWriter?.Close();
+                    csvWriter = null;
+                }
             }
         }
+        /*
         private void bSave_Click(object sender, EventArgs e)
         {
             if (!isSaving)
@@ -324,7 +380,7 @@ namespace controller
                     byte[] data = [GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3]];
                     Sending(data);
                 }
-                
+
             }
             else
             {
@@ -348,7 +404,7 @@ namespace controller
                     byte[] data = { GET_SENSOR, 0x01, 0x00 };
                     Sending(data);
                 }
-                
+
 
                 // Close CSV file
                 csvWriter?.Flush();
@@ -356,6 +412,7 @@ namespace controller
                 csvWriter = null;
             }
         }
+        */
         private void BLEtimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             //Debug.WriteLine("BLE Timer Elapsed, bReceived=" + bReceived + ", bConnected=" + bConnected);
@@ -562,16 +619,28 @@ namespace controller
         }
         private void bStimOn_Click(object sender, EventArgs e)
         {
-            Debug.WriteLine("TX Stim On");
-            labelTX.Text = "Stim On";
-            labelRX.Text = "";
-            byte[] data = [START_MANUAL_THERAPY, 0x00];
-            if (useVNBlock)
-            {
-                data = [START_MANUAL_THERAPY, 0x01, 0x01];
+            if(bStimOn.Text == "Stim On"){
+                bStimOn.Enabled = false;
+                Debug.WriteLine("TX Stim On");
+                labelTX.Text = "Stim On";
+                labelRX.Text = "";
+                byte[] data = [START_MANUAL_THERAPY, 0x00];
+                if (useVNBlock)
+                {
+                    data = [START_MANUAL_THERAPY, 0x01, 0x01];
+                }
+                Sending(data);
+            } else {
+                bStimOn.Enabled = false;
+                Debug.WriteLine("TX Stim Off");
+                labelTX.Text = "Stim Off";
+                labelRX.Text = "";
+                byte[] data = [STOP_MANUAL_THERAPY, 0x00];
+                Sending(data);
             }
-            Sending(data);
         }
+
+        /*
         private void bStimOff_Click(object sender, EventArgs e)
         {
             Debug.WriteLine("TX Stim Off");
@@ -580,6 +649,7 @@ namespace controller
             byte[] data = [STOP_MANUAL_THERAPY, 0x00];
             Sending(data);
         }
+        */
         private void Sending(byte[] data)
         {
             byte[] packet = data.ToArray();
@@ -914,14 +984,16 @@ namespace controller
             switch (bResponse[0])
             {
                 case START_MANUAL_THERAPY:
-                    bStimOn.BeginInvoke((Action)(() => bStimOn.Enabled = false));
-                    bStimOff.BeginInvoke((Action)(() => bStimOff.Enabled = true));
+                    bStimOn.BeginInvoke((Action)(() => bStimOn.Text = "Stim Off"));
+                    bStimOn.BeginInvoke((Action)(() => bStimOn.BackColor = System.Drawing.Color.Red));
+                    bStimOn.BeginInvoke((Action)(() => bStimOn.Enabled = true));
                     Debug.WriteLine("RX Stim On");
                     labelRX.BeginInvoke((Action)(() => labelRX.Text = "Stim On"));
                     break;
                 case STOP_MANUAL_THERAPY:
+                    bStimOn.BeginInvoke((Action)(() => bStimOn.Text = "Stim On"));
+                    bStimOn.BeginInvoke((Action)(() => bStimOn.BackColor = System.Drawing.Color.PaleGreen));
                     bStimOn.BeginInvoke((Action)(() => bStimOn.Enabled = true));
-                    bStimOff.BeginInvoke((Action)(() => bStimOff.Enabled = false));
                     Debug.WriteLine("RX Stim Off");
                     labelRX.BeginInvoke((Action)(() => labelRX.Text = "Stim Off"));
                     break;
@@ -1116,19 +1188,22 @@ namespace controller
                             case 0x30: // Get C2 - stim
                                 txtC2.BeginInvoke((Action)(() => txtC2.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
                                 stimdata[7] = txtC2.Text;
-                                File.WriteAllLines("stim.txt", stimdata);
-                                Debug.WriteLine("RX Get Params");
-                                labelRX.BeginInvoke((Action)(() => labelRX.Text = "Get Params"));
+                                if (PMode == 9 && useVNBlock) {
+                                    byte[] data10 = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x35];
+                                    Sending(data10);
+                                } else {
+                                    File.WriteAllLines("stim.txt", stimdata);
+                                    Debug.WriteLine("RX Get Params");
+                                    labelRX.BeginInvoke((Action)(() => labelRX.Text = "Get Params"));
+                                }
                                 break;
                             case 0x35: // Get VNB Amplitude
                                 Debug.WriteLine("VNB Amp: " + (((int)bResponse[8] * 256 + (int)bResponse[7] * 0.1).ToString()));
-
                                 txtVAmp.BeginInvoke((Action)(() => txtVAmp.Text = (Math.Round((((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1), 1)).ToString()));
-                                /*
-                                stimdata[0] = txtPA.Text;
-                                if (PMode == 9)
+
+                                if (PMode == 9 && useVNBlock)
                                 {
-                                    byte[] data3 = [GET_SPARS, 0x04, 0x53, 0x50, 0x30, 0x33];
+                                    byte[] data3 = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x37];
                                     Sending(data3);
                                 }
                                 else
@@ -1137,17 +1212,38 @@ namespace controller
                                     Debug.WriteLine("RX Get Params");
                                     labelRX.BeginInvoke((Action)(() => labelRX.Text = "Get Params"));
                                 }
-                                */
+                                
                                 break;
                             case 0x37: // Get VNB frequency
                                 Debug.WriteLine("VNB Frequency: " + (((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1).ToString());
                                 txtVfreq.BeginInvoke((Action)(() => txtVfreq.Text = (Math.Round((((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1), 1)).ToString()));
 
+                                if (PMode == 9 && useVNBlock)
+                                {
+                                    byte[] data3 = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x38];
+                                    Sending(data3);
+                                }
+                                else
+                                {
+                                    File.WriteAllLines("stim.txt", stimdata);
+                                    Debug.WriteLine("RX Get Params");
+                                    labelRX.BeginInvoke((Action)(() => labelRX.Text = "Get Params"));
+                                }
                                 break;
                             case 0x38: // Get VNB on time
                                 Debug.WriteLine("VNB On Time: " + (((int)bResponse[8] * 256 + (int)bResponse[7])).ToString());
                                 txtVon.BeginInvoke((Action)(() => txtVon.Text = (Math.Round((((int)bResponse[8] * 256.0 + (int)bResponse[7])), 1)).ToString()));
-
+                                if (PMode == 9 && useVNBlock)
+                                {
+                                    byte[] data3 = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x39];
+                                    Sending(data3);
+                                }
+                                else
+                                {
+                                    File.WriteAllLines("stim.txt", stimdata);
+                                    Debug.WriteLine("RX Get Params");
+                                    labelRX.BeginInvoke((Action)(() => labelRX.Text = "Get Params"));
+                                }
                                 break;
                             case 0x39: // Get VNB off time
 
@@ -1205,7 +1301,7 @@ namespace controller
                             bSendTN.BeginInvoke((Action)(() => bSendTN.Enabled = true));
                             bSendTF.BeginInvoke((Action)(() => bSendTF.Enabled = true));
                             bStimOn.BeginInvoke((Action)(() => bStimOn.Enabled = true));
-                            bStimOff.BeginInvoke((Action)(() => bStimOff.Enabled = false));
+                            //bStimOff.BeginInvoke((Action)(() => bStimOff.Enabled = false));
                             bGetC1.BeginInvoke((Action)(() => bGetC1.Enabled = true));
                             bGetC2.BeginInvoke((Action)(() => bGetC2.Enabled = true));
                             bGetPA.BeginInvoke((Action)(() => bGetPA.Enabled = true));
@@ -1215,7 +1311,7 @@ namespace controller
                             bGetTN.BeginInvoke((Action)(() => bGetTN.Enabled = true));
                             bGetTF.BeginInvoke((Action)(() => bGetTF.Enabled = true));
                             bView.BeginInvoke((Action)(() => bView.Enabled = true));
-                            bSave.BeginInvoke((Action)(() => bSave.Enabled = true));
+                            //bSave.BeginInvoke((Action)(() => bSave.Enabled = true));
                             bDownloadLogs.BeginInvoke((Action)(() => bDownloadLogs.Enabled = true));
                             bClearLogs.BeginInvoke((Action)(() => bClearLogs.Enabled = true));
                             Debug.WriteLine("TX BLE Pars");
@@ -1396,8 +1492,8 @@ namespace controller
                         if (dLength <= 0) break;
 
                         double[] RAWdata = new double[dLength * DecFactor];
-                        double[] Xdata   = new double[dLength];
-                        double[] Ydata   = new double[dLength];
+                        double[] Xdata = new double[dLength];
+                        double[] Ydata = new double[dLength];
 
                         for (int i = 0; i < dLength * DecFactor; i++)
                         {
@@ -1417,7 +1513,7 @@ namespace controller
                         for (int j = 0; j < dLength; j++)
                         {
                             _xlrTimes[_xlrHead] = Xdata[j];
-                            _xlrMags [_xlrHead] = Ydata[j];
+                            _xlrMags[_xlrHead] = Ydata[j];
                             _xlrHead = (_xlrHead + 1) % XlrBufSize;
                             if (_xlrCount < XlrBufSize) _xlrCount++;
                         }
@@ -1431,7 +1527,7 @@ namespace controller
                         {
                             int idx = (snapStart + k) % XlrBufSize;
                             snapT[k] = _xlrTimes[idx];
-                            snapM[k] = _xlrMags [idx];
+                            snapM[k] = _xlrMags[idx];
                         }
 
                         // Single Clear + redraw from rolling buffer — eliminates overlap
@@ -1900,11 +1996,11 @@ namespace controller
         {
             if (!(sender is RadioButton rb) || !rb.Checked) return;
 
-            if      (rb == rbEMG1) CurrentSignalMode = SignalMode.ECGH;
+            if (rb == rbEMG1) CurrentSignalMode = SignalMode.ECGH;
             else if (rb == rbEMG2) CurrentSignalMode = SignalMode.ECGR;
             else if (rb == rbEMG3) CurrentSignalMode = SignalMode.EMG1;
             else if (rb == rbEMG4) CurrentSignalMode = SignalMode.EMG2;
-            else if (rb == rbXLR)  CurrentSignalMode = SignalMode.XL;
+            else if (rb == rbXLR) CurrentSignalMode = SignalMode.XL;
 
             if (CurrentSignalMode != SignalMode.XL)
                 ResetSignalState();
@@ -1915,13 +2011,13 @@ namespace controller
         private void ApplySignalConfig()
         {
             if (!SignalConfigs.TryGetValue(CurrentSignalMode, out var cfg)) return;
-            sampleRate  = cfg.SampleRate;
-            DecValue    = cfg.DecValue;
-            FFTsize     = cfg.FFTsize;
-            inMaxValue  = cfg.InMaxValue;
+            sampleRate = cfg.SampleRate;
+            DecValue = cfg.DecValue;
+            FFTsize = cfg.FFTsize;
+            inMaxValue = cfg.InMaxValue;
             outMaxValue = cfg.OutMaxValue;
-            PlotLen     = cfg.PlotSeconds;
-            DECPeriod   = (int)(1000.0 * cfg.DecValue / cfg.SampleRate);
+            PlotLen = cfg.PlotSeconds;
+            DECPeriod = (int)(1000.0 * cfg.DecValue / cfg.SampleRate);
         }
 
         private void ResetSignalState()
@@ -1931,25 +2027,31 @@ namespace controller
 
             double displayHz = cfg.SampleRate / (double)cfg.DecValue;
             int bufSize = (int)(cfg.PlotSeconds * displayHz);
-            _rollBuf    = new double[bufSize];
-            _rollHead   = 0;
-            _rollCount  = 0;
+            _rollBuf = new double[bufSize];
+            _rollHead = 0;
+            _rollCount = 0;
             _dcEstimate = 0.0;
 
             double fs = cfg.SampleRate;
 
             // HP filter (Butterworth 2nd-order high-pass)
-            { double w = 2 * Math.PI * cfg.HpHz / fs, cw = Math.Cos(w), sw = Math.Sin(w), al = sw / (2 * 0.7071), a0 = 1 + al;
-              _hpFilter.Reset((1 + cw) / 2 / a0, -(1 + cw) / a0, (1 + cw) / 2 / a0, -2 * cw / a0, (1 - al) / a0); }
+            {
+                double w = 2 * Math.PI * cfg.HpHz / fs, cw = Math.Cos(w), sw = Math.Sin(w), al = sw / (2 * 0.7071), a0 = 1 + al;
+                _hpFilter.Reset((1 + cw) / 2 / a0, -(1 + cw) / a0, (1 + cw) / 2 / a0, -2 * cw / a0, (1 - al) / a0);
+            }
 
             // LP filter (Butterworth 2nd-order low-pass)
-            { double w = 2 * Math.PI * cfg.LpHz / fs, cw = Math.Cos(w), sw = Math.Sin(w), al = sw / (2 * 0.7071), a0 = 1 + al;
-              _lpFilter.Reset((1 - cw) / 2 / a0, (1 - cw) / a0, (1 - cw) / 2 / a0, -2 * cw / a0, (1 - al) / a0); }
+            {
+                double w = 2 * Math.PI * cfg.LpHz / fs, cw = Math.Cos(w), sw = Math.Sin(w), al = sw / (2 * 0.7071), a0 = 1 + al;
+                _lpFilter.Reset((1 - cw) / 2 / a0, (1 - cw) / a0, (1 - cw) / 2 / a0, -2 * cw / a0, (1 - al) / a0);
+            }
 
             // Notch filter, or identity pass-through if NotchHz==0
             if (cfg.NotchHz > 0)
-            { double w = 2 * Math.PI * cfg.NotchHz / fs, cw = Math.Cos(w), sw = Math.Sin(w), al = sw / (2 * cfg.NotchQ), a0 = 1 + al;
-              _notchFilter.Reset(1 / a0, -2 * cw / a0, 1 / a0, -2 * cw / a0, (1 - al) / a0); }
+            {
+                double w = 2 * Math.PI * cfg.NotchHz / fs, cw = Math.Cos(w), sw = Math.Sin(w), al = sw / (2 * cfg.NotchQ), a0 = 1 + al;
+                _notchFilter.Reset(1 / a0, -2 * cw / a0, 1 / a0, -2 * cw / a0, (1 - al) / a0);
+            }
             else
             { _notchFilter.Reset(1, 0, 0, 0, 0); }
 
@@ -2114,7 +2216,7 @@ namespace controller
             for (int i = 0; i < packet.Length; i++)
             {
                 _dcEstimate += DcAlpha * (packet[i] - _dcEstimate);
-                packet[i]   -= _dcEstimate;
+                packet[i] -= _dcEstimate;
             }
 
             // Incremental IIR filtering — state persists across packets
@@ -2133,7 +2235,7 @@ namespace controller
 
             // Snapshot on the worker thread before crossing to the UI thread
             double[] plotSnap = LinearizeRingBuffer();
-            double   dtPlot   = cfg.DecValue / (double)cfg.SampleRate;
+            double dtPlot = cfg.DecValue / (double)cfg.SampleRate;
 
             formsPlot1.BeginInvoke((Action)(() =>
             {
@@ -2413,11 +2515,27 @@ namespace controller
             {
                 useVNBlock = true;
                 groupSineWave.Enabled = true;
+                txtC1.Enabled = false;
+                bSendC1.Enabled = false;
+                bGetC1.Enabled = false;
+                label8.Enabled = false;
+                txtC2.Enabled = false;
+                bSendC2.Enabled = false;
+                bGetC2.Enabled = false;
+                label9.Enabled = false;
             }
             else
             {
                 useVNBlock = false;
                 groupSineWave.Enabled = false;
+                txtC1.Enabled = true;
+                bSendC1.Enabled = true;
+                bGetC1.Enabled = true;
+                label8.Enabled = true;
+                txtC2.Enabled = true;
+                bSendC2.Enabled = true;
+                bGetC2.Enabled = true;
+                label9.Enabled = true;
             }
         }
 
@@ -2467,23 +2585,23 @@ namespace controller
 
         private struct SignalModeConfig
         {
-            public float  SampleRate;
-            public int    DecValue;        // must divide PacketLen (100) evenly
-            public int    FFTsize;
-            public int    InMaxValue, OutMaxValue;
-            public int    PlotSeconds;     // display window width
+            public float SampleRate;
+            public int DecValue;        // must divide PacketLen (100) evenly
+            public int FFTsize;
+            public int InMaxValue, OutMaxValue;
+            public int PlotSeconds;     // display window width
             public double HpHz, LpHz;
             public double NotchHz, NotchQ; // NotchHz=0 → identity (no notch)
         }
 
         private static readonly Dictionary<SignalMode, SignalModeConfig> SignalConfigs =
             new Dictionary<SignalMode, SignalModeConfig>
-        {
-            [SignalMode.ECGH] = new SignalModeConfig { SampleRate=256,  DecValue=1,  FFTsize=256, InMaxValue=3, OutMaxValue=4, PlotSeconds=8, HpHz=0.5,  LpHz=40,   NotchHz=60, NotchQ=30 },
-            [SignalMode.ECGR] = new SignalModeConfig { SampleRate=256,  DecValue=1,  FFTsize=256, InMaxValue=3, OutMaxValue=4, PlotSeconds=8, HpHz=0.01, LpHz=20,   NotchHz=60, NotchQ=30 },
-            [SignalMode.EMG1] = new SignalModeConfig { SampleRate=6400, DecValue=10, FFTsize=256, InMaxValue=3, OutMaxValue=4, PlotSeconds=2, HpHz=20,   LpHz=500,  NotchHz=60, NotchQ=30 },
-            [SignalMode.EMG2] = new SignalModeConfig { SampleRate=6400, DecValue=10, FFTsize=256, InMaxValue=3, OutMaxValue=4, PlotSeconds=2, HpHz=300,  LpHz=3000, NotchHz=0,  NotchQ=30 },
-        };
+            {
+                [SignalMode.ECGH] = new SignalModeConfig { SampleRate = 256, DecValue = 1, FFTsize = 256, InMaxValue = 3, OutMaxValue = 4, PlotSeconds = 8, HpHz = 0.5, LpHz = 40, NotchHz = 60, NotchQ = 30 },
+                [SignalMode.ECGR] = new SignalModeConfig { SampleRate = 256, DecValue = 1, FFTsize = 256, InMaxValue = 3, OutMaxValue = 4, PlotSeconds = 8, HpHz = 0.01, LpHz = 20, NotchHz = 60, NotchQ = 30 },
+                [SignalMode.EMG1] = new SignalModeConfig { SampleRate = 6400, DecValue = 10, FFTsize = 256, InMaxValue = 3, OutMaxValue = 4, PlotSeconds = 2, HpHz = 20, LpHz = 500, NotchHz = 60, NotchQ = 30 },
+                [SignalMode.EMG2] = new SignalModeConfig { SampleRate = 6400, DecValue = 10, FFTsize = 256, InMaxValue = 3, OutMaxValue = 4, PlotSeconds = 2, HpHz = 300, LpHz = 3000, NotchHz = 0, NotchQ = 30 },
+            };
 
         // -------- Persistent biquad filter state --------
 
@@ -2514,6 +2632,40 @@ namespace controller
             }
         }
 
+        private void chkDev_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chkDev.Checked)
+            {
+                groupDev.Enabled = true;
+                groupDev.Visible = true;
+            }
+            else
+            {
+                groupDev.Enabled = false;
+                groupDev.Visible = false;
+            }
+        }
+
+        private void labelV_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void chkSave_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chkSave.Checked)
+            {
+                isSaving = true;
+                label16.Enabled = true;
+                txtFname.Enabled = true;
+            }
+            else
+            {
+                isSaving = false;
+                label16.Enabled = false;
+                txtFname.Enabled = false;
+            }
+        }
     }
 
     //A class for hashing and signing a private key

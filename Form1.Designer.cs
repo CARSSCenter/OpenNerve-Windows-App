@@ -27,7 +27,6 @@ namespace controller
             bSendPF = new Button();
             txtPF = new TextBox();
             label2 = new System.Windows.Forms.Label();
-            bStimOff = new Button();
             bStimOn = new Button();
             bSendTN = new Button();
             txtTN = new TextBox();
@@ -61,7 +60,6 @@ namespace controller
             rbEMG2 = new RadioButton();
             rbEMG1 = new RadioButton();
             txtFname = new TextBox();
-            bSave = new Button();
             bView = new Button();
             bDownloadLogs = new Button();
             bClearLogs = new Button();
@@ -69,21 +67,10 @@ namespace controller
             rbEMG4 = new RadioButton();
             labelV = new System.Windows.Forms.Label();
             groupSignalMode = new GroupBox();
+            rbXLR = new RadioButton();
             getImp = new Button();
             labelZ = new System.Windows.Forms.Label();
             groupSineWave = new GroupBox();
-            bSetMaxBlock = new Button();
-            txtMaxVNB = new TextBox();
-            label17 = new System.Windows.Forms.Label();
-            bBlockMax = new Button();
-            bGetV2 = new Button();
-            bSendV2 = new Button();
-            label10 = new System.Windows.Forms.Label();
-            txtV2 = new TextBox();
-            bGetV1 = new Button();
-            bSendV1 = new Button();
-            label11 = new System.Windows.Forms.Label();
-            txtV1 = new TextBox();
             bGetVoff = new Button();
             bGetVon = new Button();
             bGetVfreq = new Button();
@@ -100,24 +87,40 @@ namespace controller
             bSendVamp = new Button();
             label15 = new System.Windows.Forms.Label();
             txtVAmp = new TextBox();
+            bGetV2 = new Button();
+            bSendV2 = new Button();
+            label10 = new System.Windows.Forms.Label();
+            txtV2 = new TextBox();
+            bGetV1 = new Button();
+            bSendV1 = new Button();
+            label11 = new System.Windows.Forms.Label();
+            txtV1 = new TextBox();
+            bSetMaxBlock = new Button();
+            txtMaxVNB = new TextBox();
+            label17 = new System.Windows.Forms.Label();
+            bBlockMax = new Button();
             bStimMax = new Button();
             bZmin = new Button();
             ckVNB = new CheckBox();
-            rbXLR = new RadioButton();
+            chkDev = new CheckBox();
+            groupDev = new GroupBox();
+            label16 = new System.Windows.Forms.Label();
+            chkSave = new CheckBox();
             groupSignalMode.SuspendLayout();
             groupSineWave.SuspendLayout();
+            groupDev.SuspendLayout();
             SuspendLayout();
             // 
             // bDisconnect
             // 
             bDisconnect.Enabled = false;
             bDisconnect.Font = new Font("Times New Roman", 14F);
-            bDisconnect.Location = new Point(18, 5);
+            bDisconnect.Location = new Point(127, 14);
             bDisconnect.Margin = new Padding(4, 5, 4, 5);
             bDisconnect.Name = "bDisconnect";
-            bDisconnect.Size = new Size(175, 42);
+            bDisconnect.Size = new Size(252, 41);
             bDisconnect.TabIndex = 16;
-            bDisconnect.Text = "Quit";
+            bDisconnect.Text = "Disconnect";
             bDisconnect.TextAlign = ContentAlignment.BottomCenter;
             bDisconnect.UseVisualStyleBackColor = true;
             bDisconnect.Click += bDisconnect_Click;
@@ -125,7 +128,7 @@ namespace controller
             // txtPA
             // 
             txtPA.Font = new Font("Times New Roman", 12F);
-            txtPA.Location = new Point(18, 446);
+            txtPA.Location = new Point(18, 409);
             txtPA.Margin = new Padding(4, 5, 4, 5);
             txtPA.Name = "txtPA";
             txtPA.Size = new Size(72, 30);
@@ -135,7 +138,7 @@ namespace controller
             // labelOpcode
             // 
             labelOpcode.Font = new Font("Times New Roman", 14F);
-            labelOpcode.Location = new Point(-1, 412);
+            labelOpcode.Location = new Point(-1, 375);
             labelOpcode.Margin = new Padding(4, 0, 4, 0);
             labelOpcode.MaximumSize = new Size(200, 33);
             labelOpcode.MinimumSize = new Size(240, 33);
@@ -149,7 +152,7 @@ namespace controller
             // 
             bSendPA.Enabled = false;
             bSendPA.Font = new Font("Times New Roman", 14F);
-            bSendPA.Location = new Point(98, 443);
+            bSendPA.Location = new Point(98, 406);
             bSendPA.Margin = new Padding(4, 5, 4, 5);
             bSendPA.Name = "bSendPA";
             bSendPA.Size = new Size(71, 40);
@@ -161,7 +164,7 @@ namespace controller
             // label1
             // 
             label1.Font = new Font("Times New Roman", 14F);
-            label1.Location = new Point(-1, 483);
+            label1.Location = new Point(-1, 446);
             label1.Margin = new Padding(4, 0, 4, 0);
             label1.MaximumSize = new Size(200, 33);
             label1.MinimumSize = new Size(240, 33);
@@ -175,7 +178,7 @@ namespace controller
             // 
             bSendPW.Enabled = false;
             bSendPW.Font = new Font("Times New Roman", 14F);
-            bSendPW.Location = new Point(98, 518);
+            bSendPW.Location = new Point(98, 481);
             bSendPW.Margin = new Padding(4, 5, 4, 5);
             bSendPW.Name = "bSendPW";
             bSendPW.Size = new Size(71, 40);
@@ -187,7 +190,7 @@ namespace controller
             // txtPW
             // 
             txtPW.Font = new Font("Times New Roman", 12F);
-            txtPW.Location = new Point(18, 521);
+            txtPW.Location = new Point(18, 484);
             txtPW.Margin = new Padding(4, 5, 4, 5);
             txtPW.Name = "txtPW";
             txtPW.Size = new Size(72, 30);
@@ -198,7 +201,7 @@ namespace controller
             // 
             bSendPF.Enabled = false;
             bSendPF.Font = new Font("Times New Roman", 14F);
-            bSendPF.Location = new Point(98, 592);
+            bSendPF.Location = new Point(98, 558);
             bSendPF.Margin = new Padding(4, 5, 4, 5);
             bSendPF.Name = "bSendPF";
             bSendPF.Size = new Size(71, 40);
@@ -210,7 +213,7 @@ namespace controller
             // txtPF
             // 
             txtPF.Font = new Font("Times New Roman", 12F);
-            txtPF.Location = new Point(18, 596);
+            txtPF.Location = new Point(18, 562);
             txtPF.Margin = new Padding(4, 5, 4, 5);
             txtPF.Name = "txtPF";
             txtPF.Size = new Size(72, 30);
@@ -220,7 +223,7 @@ namespace controller
             // label2
             // 
             label2.Font = new Font("Times New Roman", 14F);
-            label2.Location = new Point(-1, 558);
+            label2.Location = new Point(-1, 521);
             label2.Margin = new Padding(4, 0, 4, 0);
             label2.MaximumSize = new Size(200, 33);
             label2.MinimumSize = new Size(240, 33);
@@ -230,37 +233,25 @@ namespace controller
             label2.Text = "Freq, 1-1200";
             label2.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // bStimOff
-            // 
-            bStimOff.Enabled = false;
-            bStimOff.Font = new Font("Times New Roman", 14F);
-            bStimOff.Location = new Point(263, 870);
-            bStimOff.Margin = new Padding(4, 5, 4, 5);
-            bStimOff.Name = "bStimOff";
-            bStimOff.Size = new Size(168, 47);
-            bStimOff.TabIndex = 27;
-            bStimOff.Text = "Stim Off";
-            bStimOff.UseVisualStyleBackColor = true;
-            bStimOff.Click += bStimOff_Click;
-            // 
             // bStimOn
             // 
+            bStimOn.BackColor = System.Drawing.Color.PaleGreen;
             bStimOn.Enabled = false;
             bStimOn.Font = new Font("Times New Roman", 14F);
-            bStimOn.Location = new Point(91, 870);
+            bStimOn.Location = new Point(91, 841);
             bStimOn.Margin = new Padding(4, 5, 4, 5);
             bStimOn.Name = "bStimOn";
-            bStimOn.Size = new Size(160, 47);
+            bStimOn.Size = new Size(354, 47);
             bStimOn.TabIndex = 26;
             bStimOn.Text = "Stim On";
-            bStimOn.UseVisualStyleBackColor = true;
+            bStimOn.UseVisualStyleBackColor = false;
             bStimOn.Click += bStimOn_Click;
             // 
             // bSendTN
             // 
             bSendTN.Enabled = false;
             bSendTN.Font = new Font("Times New Roman", 14F);
-            bSendTN.Location = new Point(98, 744);
+            bSendTN.Location = new Point(98, 710);
             bSendTN.Margin = new Padding(4, 5, 4, 5);
             bSendTN.Name = "bSendTN";
             bSendTN.Size = new Size(71, 40);
@@ -272,7 +263,7 @@ namespace controller
             // txtTN
             // 
             txtTN.Font = new Font("Times New Roman", 12F);
-            txtTN.Location = new Point(18, 747);
+            txtTN.Location = new Point(18, 713);
             txtTN.Margin = new Padding(4, 5, 4, 5);
             txtTN.Name = "txtTN";
             txtTN.Size = new Size(72, 30);
@@ -282,7 +273,7 @@ namespace controller
             // label3
             // 
             label3.Font = new Font("Times New Roman", 14F);
-            label3.Location = new Point(-1, 709);
+            label3.Location = new Point(-1, 675);
             label3.Margin = new Padding(4, 0, 4, 0);
             label3.MaximumSize = new Size(200, 33);
             label3.MinimumSize = new Size(240, 33);
@@ -296,7 +287,7 @@ namespace controller
             // 
             bSendPR.Enabled = false;
             bSendPR.Font = new Font("Times New Roman", 14F);
-            bSendPR.Location = new Point(98, 667);
+            bSendPR.Location = new Point(98, 633);
             bSendPR.Margin = new Padding(4, 5, 4, 5);
             bSendPR.Name = "bSendPR";
             bSendPR.Size = new Size(71, 40);
@@ -308,7 +299,7 @@ namespace controller
             // txtPR
             // 
             txtPR.Font = new Font("Times New Roman", 12F);
-            txtPR.Location = new Point(18, 670);
+            txtPR.Location = new Point(18, 636);
             txtPR.Margin = new Padding(4, 5, 4, 5);
             txtPR.Name = "txtPR";
             txtPR.Size = new Size(72, 30);
@@ -318,7 +309,7 @@ namespace controller
             // label4
             // 
             label4.Font = new Font("Times New Roman", 14F);
-            label4.Location = new Point(-1, 632);
+            label4.Location = new Point(-1, 598);
             label4.Margin = new Padding(4, 0, 4, 0);
             label4.MaximumSize = new Size(200, 33);
             label4.MinimumSize = new Size(240, 33);
@@ -332,12 +323,12 @@ namespace controller
             // 
             bGet.Enabled = false;
             bGet.Font = new Font("Times New Roman", 14F);
-            bGet.Location = new Point(15, 224);
+            bGet.Location = new Point(127, 187);
             bGet.Margin = new Padding(4, 5, 4, 5);
             bGet.Name = "bGet";
-            bGet.Size = new Size(489, 40);
+            bGet.Size = new Size(252, 40);
             bGet.TabIndex = 35;
-            bGet.Text = "Get Params";
+            bGet.Text = "Load Parameters";
             bGet.TextAlign = ContentAlignment.BottomCenter;
             bGet.UseVisualStyleBackColor = true;
             bGet.Click += bGet_Click;
@@ -345,11 +336,11 @@ namespace controller
             // labelRX
             // 
             labelRX.Font = new Font("Times New Roman", 12F);
-            labelRX.Location = new Point(60, 959);
+            labelRX.Location = new Point(336, 792);
             labelRX.Margin = new Padding(4, 0, 4, 0);
             labelRX.MinimumSize = new Size(140, 34);
             labelRX.Name = "labelRX";
-            labelRX.Size = new Size(190, 34);
+            labelRX.Size = new Size(140, 34);
             labelRX.TabIndex = 36;
             labelRX.Text = "-";
             labelRX.TextAlign = ContentAlignment.MiddleCenter;
@@ -357,11 +348,11 @@ namespace controller
             // labelTX
             // 
             labelTX.Font = new Font("Times New Roman", 12F);
-            labelTX.Location = new Point(60, 922);
+            labelTX.Location = new Point(336, 758);
             labelTX.Margin = new Padding(4, 0, 4, 0);
             labelTX.MinimumSize = new Size(140, 34);
             labelTX.Name = "labelTX";
-            labelTX.Size = new Size(190, 34);
+            labelTX.Size = new Size(140, 34);
             labelTX.TabIndex = 37;
             labelTX.Text = "-";
             labelTX.TextAlign = ContentAlignment.MiddleCenter;
@@ -369,7 +360,7 @@ namespace controller
             // label5
             // 
             label5.Font = new Font("Times New Roman", 12F);
-            label5.Location = new Point(6, 921);
+            label5.Location = new Point(282, 757);
             label5.Margin = new Padding(4, 0, 4, 0);
             label5.MinimumSize = new Size(40, 34);
             label5.Name = "label5";
@@ -381,7 +372,7 @@ namespace controller
             // label6
             // 
             label6.Font = new Font("Times New Roman", 12F);
-            label6.Location = new Point(6, 958);
+            label6.Location = new Point(282, 791);
             label6.Margin = new Padding(4, 0, 4, 0);
             label6.MinimumSize = new Size(40, 34);
             label6.Name = "label6";
@@ -394,7 +385,7 @@ namespace controller
             // 
             bSendTF.Enabled = false;
             bSendTF.Font = new Font("Times New Roman", 14F);
-            bSendTF.Location = new Point(98, 821);
+            bSendTF.Location = new Point(98, 787);
             bSendTF.Margin = new Padding(4, 5, 4, 5);
             bSendTF.Name = "bSendTF";
             bSendTF.Size = new Size(71, 40);
@@ -406,7 +397,7 @@ namespace controller
             // txtTF
             // 
             txtTF.Font = new Font("Times New Roman", 12F);
-            txtTF.Location = new Point(18, 825);
+            txtTF.Location = new Point(18, 791);
             txtTF.Margin = new Padding(4, 5, 4, 5);
             txtTF.Name = "txtTF";
             txtTF.Size = new Size(72, 30);
@@ -416,7 +407,7 @@ namespace controller
             // label7
             // 
             label7.Font = new Font("Times New Roman", 14F);
-            label7.Location = new Point(-1, 785);
+            label7.Location = new Point(-1, 751);
             label7.Margin = new Padding(4, 0, 4, 0);
             label7.MaximumSize = new Size(200, 33);
             label7.MinimumSize = new Size(240, 33);
@@ -430,12 +421,12 @@ namespace controller
             // 
             bGetTF.Enabled = false;
             bGetTF.Font = new Font("Times New Roman", 14F);
-            bGetTF.Location = new Point(174, 821);
+            bGetTF.Location = new Point(174, 787);
             bGetTF.Margin = new Padding(4, 5, 4, 5);
             bGetTF.Name = "bGetTF";
             bGetTF.Size = new Size(64, 40);
             bGetTF.TabIndex = 48;
-            bGetTF.Text = "get";
+            bGetTF.Text = "load";
             bGetTF.UseVisualStyleBackColor = true;
             bGetTF.Click += bGetTF_Click;
             // 
@@ -443,12 +434,12 @@ namespace controller
             // 
             bGetTN.Enabled = false;
             bGetTN.Font = new Font("Times New Roman", 14F);
-            bGetTN.Location = new Point(174, 744);
+            bGetTN.Location = new Point(174, 710);
             bGetTN.Margin = new Padding(4, 5, 4, 5);
             bGetTN.Name = "bGetTN";
             bGetTN.Size = new Size(64, 40);
             bGetTN.TabIndex = 47;
-            bGetTN.Text = "get";
+            bGetTN.Text = "load";
             bGetTN.UseVisualStyleBackColor = true;
             bGetTN.Click += bGetTN_Click;
             // 
@@ -456,12 +447,12 @@ namespace controller
             // 
             bGetPR.Enabled = false;
             bGetPR.Font = new Font("Times New Roman", 14F);
-            bGetPR.Location = new Point(174, 667);
+            bGetPR.Location = new Point(174, 633);
             bGetPR.Margin = new Padding(4, 5, 4, 5);
             bGetPR.Name = "bGetPR";
             bGetPR.Size = new Size(64, 40);
             bGetPR.TabIndex = 46;
-            bGetPR.Text = "get";
+            bGetPR.Text = "load";
             bGetPR.UseVisualStyleBackColor = true;
             bGetPR.Click += bGetPR_Click;
             // 
@@ -469,12 +460,12 @@ namespace controller
             // 
             bGetPF.Enabled = false;
             bGetPF.Font = new Font("Times New Roman", 14F);
-            bGetPF.Location = new Point(174, 592);
+            bGetPF.Location = new Point(174, 558);
             bGetPF.Margin = new Padding(4, 5, 4, 5);
             bGetPF.Name = "bGetPF";
             bGetPF.Size = new Size(64, 40);
             bGetPF.TabIndex = 45;
-            bGetPF.Text = "get";
+            bGetPF.Text = "load";
             bGetPF.UseVisualStyleBackColor = true;
             bGetPF.Click += bGetPF_Click;
             // 
@@ -482,12 +473,12 @@ namespace controller
             // 
             bGetPW.Enabled = false;
             bGetPW.Font = new Font("Times New Roman", 14F);
-            bGetPW.Location = new Point(174, 518);
+            bGetPW.Location = new Point(174, 481);
             bGetPW.Margin = new Padding(4, 5, 4, 5);
             bGetPW.Name = "bGetPW";
             bGetPW.Size = new Size(64, 40);
             bGetPW.TabIndex = 44;
-            bGetPW.Text = "get";
+            bGetPW.Text = "load";
             bGetPW.UseVisualStyleBackColor = true;
             bGetPW.Click += bGetPW_Click;
             // 
@@ -495,12 +486,12 @@ namespace controller
             // 
             bGetPA.Enabled = false;
             bGetPA.Font = new Font("Times New Roman", 14F);
-            bGetPA.Location = new Point(174, 443);
+            bGetPA.Location = new Point(174, 406);
             bGetPA.Margin = new Padding(4, 5, 4, 5);
             bGetPA.Name = "bGetPA";
             bGetPA.Size = new Size(64, 40);
             bGetPA.TabIndex = 43;
-            bGetPA.Text = "get";
+            bGetPA.Text = "load";
             bGetPA.UseVisualStyleBackColor = true;
             bGetPA.Click += bGetPA_Click;
             // 
@@ -508,12 +499,12 @@ namespace controller
             // 
             bGetC1.Enabled = false;
             bGetC1.Font = new Font("Times New Roman", 14F);
-            bGetC1.Location = new Point(174, 300);
+            bGetC1.Location = new Point(174, 263);
             bGetC1.Margin = new Padding(4, 5, 4, 5);
             bGetC1.Name = "bGetC1";
             bGetC1.Size = new Size(64, 40);
             bGetC1.TabIndex = 52;
-            bGetC1.Text = "get";
+            bGetC1.Text = "load";
             bGetC1.UseVisualStyleBackColor = true;
             bGetC1.Click += bGetC1_Click;
             // 
@@ -521,7 +512,7 @@ namespace controller
             // 
             bSendC1.Enabled = false;
             bSendC1.Font = new Font("Times New Roman", 14F);
-            bSendC1.Location = new Point(98, 300);
+            bSendC1.Location = new Point(98, 263);
             bSendC1.Margin = new Padding(4, 5, 4, 5);
             bSendC1.Name = "bSendC1";
             bSendC1.Size = new Size(71, 40);
@@ -533,20 +524,20 @@ namespace controller
             // label8
             // 
             label8.Font = new Font("Times New Roman", 14F);
-            label8.Location = new Point(-1, 269);
+            label8.Location = new Point(-1, 232);
             label8.Margin = new Padding(4, 0, 4, 0);
             label8.MaximumSize = new Size(200, 33);
             label8.MinimumSize = new Size(240, 33);
             label8.Name = "label8";
             label8.Size = new Size(240, 33);
             label8.TabIndex = 50;
-            label8.Text = "Cathode, 1-7";
+            label8.Text = "Cathode, Ch1-4";
             label8.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // txtC1
             // 
             txtC1.Font = new Font("Times New Roman", 12F);
-            txtC1.Location = new Point(18, 303);
+            txtC1.Location = new Point(18, 266);
             txtC1.Margin = new Padding(4, 5, 4, 5);
             txtC1.Name = "txtC1";
             txtC1.Size = new Size(72, 30);
@@ -557,12 +548,12 @@ namespace controller
             // 
             bGetC2.Enabled = false;
             bGetC2.Font = new Font("Times New Roman", 14F);
-            bGetC2.Location = new Point(174, 371);
+            bGetC2.Location = new Point(174, 334);
             bGetC2.Margin = new Padding(4, 5, 4, 5);
             bGetC2.Name = "bGetC2";
             bGetC2.Size = new Size(64, 40);
             bGetC2.TabIndex = 56;
-            bGetC2.Text = "get";
+            bGetC2.Text = "load";
             bGetC2.UseVisualStyleBackColor = true;
             bGetC2.Click += bGetC2_Click;
             // 
@@ -570,7 +561,7 @@ namespace controller
             // 
             bSendC2.Enabled = false;
             bSendC2.Font = new Font("Times New Roman", 14F);
-            bSendC2.Location = new Point(98, 371);
+            bSendC2.Location = new Point(98, 334);
             bSendC2.Margin = new Padding(4, 5, 4, 5);
             bSendC2.Name = "bSendC2";
             bSendC2.Size = new Size(71, 40);
@@ -582,20 +573,20 @@ namespace controller
             // label9
             // 
             label9.Font = new Font("Times New Roman", 14F);
-            label9.Location = new Point(-1, 340);
+            label9.Location = new Point(-1, 303);
             label9.Margin = new Padding(4, 0, 4, 0);
             label9.MaximumSize = new Size(200, 33);
             label9.MinimumSize = new Size(240, 33);
             label9.Name = "label9";
             label9.Size = new Size(240, 33);
             label9.TabIndex = 54;
-            label9.Text = "Anode, 2-8";
+            label9.Text = "Anode, Ch1-4";
             label9.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // txtC2
             // 
             txtC2.Font = new Font("Times New Roman", 12F);
-            txtC2.Location = new Point(18, 374);
+            txtC2.Location = new Point(18, 337);
             txtC2.Margin = new Padding(4, 5, 4, 5);
             txtC2.Name = "txtC2";
             txtC2.Size = new Size(72, 30);
@@ -608,7 +599,7 @@ namespace controller
             formsPlot1.Font = new Font("Times New Roman", 12F);
             formsPlot1.Location = new Point(510, 0);
             formsPlot1.Name = "formsPlot1";
-            formsPlot1.Size = new Size(1390, 1000);
+            formsPlot1.Size = new Size(1390, 888);
             formsPlot1.TabIndex = 57;
             // 
             // rbEMG2
@@ -617,7 +608,7 @@ namespace controller
             rbEMG2.CheckAlign = ContentAlignment.BottomCenter;
             rbEMG2.Checked = true;
             rbEMG2.ImageAlign = ContentAlignment.TopCenter;
-            rbEMG2.Location = new Point(5, 66);
+            rbEMG2.Location = new Point(60, 14);
             rbEMG2.Name = "rbEMG2";
             rbEMG2.Size = new Size(49, 40);
             rbEMG2.TabIndex = 67;
@@ -640,8 +631,9 @@ namespace controller
             // 
             // txtFname
             // 
+            txtFname.Enabled = false;
             txtFname.Font = new Font("Times New Roman", 14F, System.Drawing.FontStyle.Regular, GraphicsUnit.Point, 0);
-            txtFname.Location = new Point(18, 174);
+            txtFname.Location = new Point(318, 143);
             txtFname.Margin = new Padding(4, 5, 4, 5);
             txtFname.Name = "txtFname";
             txtFname.Size = new Size(113, 34);
@@ -650,29 +642,16 @@ namespace controller
             txtFname.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             txtFname.TextChanged += txtFname_TextChanged;
             // 
-            // bSave
-            // 
-            bSave.Enabled = false;
-            bSave.Font = new Font("Times New Roman", 14F);
-            bSave.Location = new Point(13, 114);
-            bSave.Margin = new Padding(0);
-            bSave.Name = "bSave";
-            bSave.Size = new Size(180, 50);
-            bSave.TabIndex = 64;
-            bSave.Text = "Start Saving";
-            bSave.UseVisualStyleBackColor = true;
-            bSave.Click += bSave_Click;
-            // 
             // bView
             // 
             bView.Enabled = false;
             bView.Font = new Font("Times New Roman", 14F);
-            bView.Location = new Point(13, 56);
+            bView.Location = new Point(6, 77);
             bView.Margin = new Padding(4, 5, 4, 5);
             bView.Name = "bView";
-            bView.Size = new Size(180, 50);
+            bView.Size = new Size(183, 50);
             bView.TabIndex = 63;
-            bView.Text = "Start Viewing";
+            bView.Text = "Start Measuring";
             bView.UseVisualStyleBackColor = true;
             bView.Click += bView_Click;
             // 
@@ -680,7 +659,7 @@ namespace controller
             // 
             bDownloadLogs.Enabled = false;
             bDownloadLogs.Font = new Font("Times New Roman", 14F);
-            bDownloadLogs.Location = new Point(60, 998);
+            bDownloadLogs.Location = new Point(3, 23);
             bDownloadLogs.Margin = new Padding(0);
             bDownloadLogs.Name = "bDownloadLogs";
             bDownloadLogs.Size = new Size(180, 50);
@@ -693,7 +672,7 @@ namespace controller
             // 
             bClearLogs.Enabled = false;
             bClearLogs.Font = new Font("Times New Roman", 14F);
-            bClearLogs.Location = new Point(248, 998);
+            bClearLogs.Location = new Point(191, 23);
             bClearLogs.Margin = new Padding(0);
             bClearLogs.Name = "bClearLogs";
             bClearLogs.Size = new Size(180, 50);
@@ -706,7 +685,7 @@ namespace controller
             // 
             rbEMG3.AutoSize = true;
             rbEMG3.CheckAlign = ContentAlignment.BottomCenter;
-            rbEMG3.Location = new Point(3, 118);
+            rbEMG3.Location = new Point(122, 14);
             rbEMG3.Name = "rbEMG3";
             rbEMG3.Size = new Size(52, 40);
             rbEMG3.TabIndex = 69;
@@ -719,7 +698,7 @@ namespace controller
             // 
             rbEMG4.AutoSize = true;
             rbEMG4.CheckAlign = ContentAlignment.BottomCenter;
-            rbEMG4.Location = new Point(3, 170);
+            rbEMG4.Location = new Point(180, 14);
             rbEMG4.Name = "rbEMG4";
             rbEMG4.Size = new Size(52, 40);
             rbEMG4.TabIndex = 70;
@@ -730,7 +709,7 @@ namespace controller
             // labelV
             // 
             labelV.Font = new Font("Times New Roman", 12F);
-            labelV.Location = new Point(139, 178);
+            labelV.Location = new Point(438, 143);
             labelV.Margin = new Padding(4, 0, 4, 0);
             labelV.MinimumSize = new Size(40, 34);
             labelV.Name = "labelV";
@@ -738,6 +717,7 @@ namespace controller
             labelV.TabIndex = 71;
             labelV.Text = "-";
             labelV.TextAlign = ContentAlignment.MiddleCenter;
+            labelV.Click += labelV_Click;
             // 
             // groupSignalMode
             // 
@@ -746,20 +726,31 @@ namespace controller
             groupSignalMode.Controls.Add(rbEMG1);
             groupSignalMode.Controls.Add(rbEMG4);
             groupSignalMode.Controls.Add(rbEMG2);
-            groupSignalMode.Location = new Point(196, 0);
+            groupSignalMode.Location = new Point(196, 63);
             groupSignalMode.Name = "groupSignalMode";
-            groupSignalMode.Size = new Size(109, 217);
+            groupSignalMode.Size = new Size(300, 72);
             groupSignalMode.TabIndex = 72;
             groupSignalMode.TabStop = false;
-            //groupSignalMode.Enter += groupSignalMode_Enter;
+            // 
+            // rbXLR
+            // 
+            rbXLR.AutoSize = true;
+            rbXLR.CheckAlign = ContentAlignment.BottomCenter;
+            rbXLR.Location = new Point(248, 14);
+            rbXLR.Name = "rbXLR";
+            rbXLR.Size = new Size(38, 40);
+            rbXLR.TabIndex = 71;
+            rbXLR.Text = "XLR";
+            rbXLR.UseVisualStyleBackColor = true;
+            rbXLR.CheckedChanged += rbSignalMode_CheckedChange;
             // 
             // getImp
             // 
             getImp.Font = new Font("Times New Roman", 14F);
-            getImp.Location = new Point(312, 60);
+            getImp.Location = new Point(292, 675);
             getImp.Margin = new Padding(4, 5, 4, 5);
             getImp.Name = "getImp";
-            getImp.Size = new Size(175, 42);
+            getImp.Size = new Size(175, 33);
             getImp.TabIndex = 73;
             getImp.Text = "Get Impedance";
             getImp.TextAlign = ContentAlignment.BottomCenter;
@@ -769,29 +760,17 @@ namespace controller
             // labelZ
             // 
             labelZ.Font = new Font("Times New Roman", 12F);
-            labelZ.Location = new Point(347, 110);
+            labelZ.Location = new Point(292, 713);
             labelZ.Margin = new Padding(4, 0, 4, 0);
             labelZ.MinimumSize = new Size(40, 34);
             labelZ.Name = "labelZ";
-            labelZ.Size = new Size(105, 40);
+            labelZ.Size = new Size(175, 40);
             labelZ.TabIndex = 74;
             labelZ.Text = "-";
             labelZ.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // groupSineWave
             // 
-            groupSineWave.Controls.Add(bSetMaxBlock);
-            groupSineWave.Controls.Add(txtMaxVNB);
-            groupSineWave.Controls.Add(label17);
-            groupSineWave.Controls.Add(bBlockMax);
-            groupSineWave.Controls.Add(bGetV2);
-            groupSineWave.Controls.Add(bSendV2);
-            groupSineWave.Controls.Add(label10);
-            groupSineWave.Controls.Add(txtV2);
-            groupSineWave.Controls.Add(bGetV1);
-            groupSineWave.Controls.Add(bSendV1);
-            groupSineWave.Controls.Add(label11);
-            groupSineWave.Controls.Add(txtV1);
             groupSineWave.Controls.Add(bGetVoff);
             groupSineWave.Controls.Add(bGetVon);
             groupSineWave.Controls.Add(bGetVfreq);
@@ -809,205 +788,64 @@ namespace controller
             groupSineWave.Controls.Add(label15);
             groupSineWave.Controls.Add(txtVAmp);
             groupSineWave.Enabled = false;
-            groupSineWave.Location = new Point(257, 296);
+            groupSineWave.Location = new Point(257, 259);
             groupSineWave.Name = "groupSineWave";
-            groupSineWave.Size = new Size(247, 559);
+            groupSineWave.Size = new Size(247, 369);
             groupSineWave.TabIndex = 73;
             groupSineWave.TabStop = false;
-            // 
-            // bSetMaxBlock
-            // 
-            bSetMaxBlock.Font = new Font("Times New Roman", 14F);
-            bSetMaxBlock.Location = new Point(90, 513);
-            bSetMaxBlock.Margin = new Padding(4, 5, 4, 5);
-            bSetMaxBlock.Name = "bSetMaxBlock";
-            bSetMaxBlock.Size = new Size(71, 40);
-            bSetMaxBlock.TabIndex = 88;
-            bSetMaxBlock.Text = "set";
-            bSetMaxBlock.UseVisualStyleBackColor = true;
-            bSetMaxBlock.Click += bSetMaxBlock_Click;
-            // 
-            // txtMaxVNB
-            // 
-            txtMaxVNB.Font = new Font("Times New Roman", 12F);
-            txtMaxVNB.Location = new Point(10, 520);
-            txtMaxVNB.Margin = new Padding(4, 5, 4, 5);
-            txtMaxVNB.Name = "txtMaxVNB";
-            txtMaxVNB.Size = new Size(72, 30);
-            txtMaxVNB.TabIndex = 87;
-            txtMaxVNB.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
-            // label17
-            // 
-            label17.Font = new Font("Times New Roman", 14F);
-            label17.Location = new Point(5, 479);
-            label17.Margin = new Padding(4, 0, 4, 0);
-            label17.MaximumSize = new Size(200, 33);
-            label17.MinimumSize = new Size(240, 33);
-            label17.Name = "label17";
-            label17.Size = new Size(240, 33);
-            label17.TabIndex = 86;
-            label17.Text = "Max VNB";
-            label17.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // bBlockMax
-            // 
-            bBlockMax.Font = new Font("Times New Roman", 14F);
-            bBlockMax.Location = new Point(166, 516);
-            bBlockMax.Margin = new Padding(4, 5, 4, 5);
-            bBlockMax.Name = "bBlockMax";
-            bBlockMax.Size = new Size(61, 37);
-            bBlockMax.TabIndex = 85;
-            bBlockMax.Text = "Get";
-            bBlockMax.UseVisualStyleBackColor = true;
-            bBlockMax.Click += bBlockMax_Click;
-            // 
-            // bGetV2
-            // 
-            bGetV2.Font = new Font("Times New Roman", 14F);
-            bGetV2.Location = new Point(181, 114);
-            bGetV2.Margin = new Padding(4, 5, 4, 5);
-            bGetV2.Name = "bGetV2";
-            bGetV2.Size = new Size(64, 40);
-            bGetV2.TabIndex = 82;
-            bGetV2.Text = "get";
-            bGetV2.UseVisualStyleBackColor = true;
-            bGetV2.Click += bGetV2_Click;
-            // 
-            // bSendV2
-            // 
-            bSendV2.Font = new Font("Times New Roman", 14F);
-            bSendV2.Location = new Point(105, 114);
-            bSendV2.Margin = new Padding(4, 5, 4, 5);
-            bSendV2.Name = "bSendV2";
-            bSendV2.Size = new Size(71, 40);
-            bSendV2.TabIndex = 81;
-            bSendV2.Text = "set";
-            bSendV2.UseVisualStyleBackColor = true;
-            bSendV2.Click += bSendV2_Click;
-            // 
-            // label10
-            // 
-            label10.Font = new Font("Times New Roman", 14F);
-            label10.Location = new Point(6, 83);
-            label10.Margin = new Padding(4, 0, 4, 0);
-            label10.MaximumSize = new Size(200, 33);
-            label10.MinimumSize = new Size(240, 33);
-            label10.Name = "label10";
-            label10.Size = new Size(240, 33);
-            label10.TabIndex = 80;
-            label10.Text = "Anode, 2-5";
-            label10.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // txtV2
-            // 
-            txtV2.Font = new Font("Times New Roman", 12F);
-            txtV2.Location = new Point(25, 117);
-            txtV2.Margin = new Padding(4, 5, 4, 5);
-            txtV2.Name = "txtV2";
-            txtV2.Size = new Size(72, 30);
-            txtV2.TabIndex = 79;
-            txtV2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            // 
-            // bGetV1
-            // 
-            bGetV1.Font = new Font("Times New Roman", 14F);
-            bGetV1.Location = new Point(181, 43);
-            bGetV1.Margin = new Padding(4, 5, 4, 5);
-            bGetV1.Name = "bGetV1";
-            bGetV1.Size = new Size(64, 40);
-            bGetV1.TabIndex = 78;
-            bGetV1.Text = "get";
-            bGetV1.UseVisualStyleBackColor = true;
-            bGetV1.Click += bGetV1_Click;
-            // 
-            // bSendV1
-            // 
-            bSendV1.Font = new Font("Times New Roman", 14F);
-            bSendV1.Location = new Point(105, 43);
-            bSendV1.Margin = new Padding(4, 5, 4, 5);
-            bSendV1.Name = "bSendV1";
-            bSendV1.Size = new Size(71, 40);
-            bSendV1.TabIndex = 77;
-            bSendV1.Text = "set";
-            bSendV1.UseVisualStyleBackColor = true;
-            bSendV1.Click += bSendV1_Click;
-            // 
-            // label11
-            // 
-            label11.Font = new Font("Times New Roman", 14F);
-            label11.Location = new Point(6, 12);
-            label11.Margin = new Padding(4, 0, 4, 0);
-            label11.MaximumSize = new Size(200, 33);
-            label11.MinimumSize = new Size(240, 33);
-            label11.Name = "label11";
-            label11.Size = new Size(240, 33);
-            label11.TabIndex = 76;
-            label11.Text = "Cathode, 1-4";
-            label11.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // txtV1
-            // 
-            txtV1.Font = new Font("Times New Roman", 12F);
-            txtV1.Location = new Point(25, 46);
-            txtV1.Margin = new Padding(4, 5, 4, 5);
-            txtV1.Name = "txtV1";
-            txtV1.Size = new Size(72, 30);
-            txtV1.TabIndex = 75;
-            txtV1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // bGetVoff
             // 
             bGetVoff.Font = new Font("Times New Roman", 14F);
-            bGetVoff.Location = new Point(181, 437);
+            bGetVoff.Location = new Point(181, 305);
             bGetVoff.Margin = new Padding(4, 5, 4, 5);
             bGetVoff.Name = "bGetVoff";
             bGetVoff.Size = new Size(64, 40);
             bGetVoff.TabIndex = 74;
-            bGetVoff.Text = "get";
+            bGetVoff.Text = "load";
             bGetVoff.UseVisualStyleBackColor = true;
             bGetVoff.Click += bGetVoff_Click;
             // 
             // bGetVon
             // 
             bGetVon.Font = new Font("Times New Roman", 14F);
-            bGetVon.Location = new Point(181, 360);
+            bGetVon.Location = new Point(181, 228);
             bGetVon.Margin = new Padding(4, 5, 4, 5);
             bGetVon.Name = "bGetVon";
             bGetVon.Size = new Size(64, 40);
             bGetVon.TabIndex = 73;
-            bGetVon.Text = "get";
+            bGetVon.Text = "load";
             bGetVon.UseVisualStyleBackColor = true;
             bGetVon.Click += bGetVon_Click;
             // 
             // bGetVfreq
             // 
             bGetVfreq.Font = new Font("Times New Roman", 14F);
-            bGetVfreq.Location = new Point(181, 269);
+            bGetVfreq.Location = new Point(181, 137);
             bGetVfreq.Margin = new Padding(4, 5, 4, 5);
             bGetVfreq.Name = "bGetVfreq";
             bGetVfreq.Size = new Size(64, 40);
             bGetVfreq.TabIndex = 72;
-            bGetVfreq.Text = "get";
+            bGetVfreq.Text = "load";
             bGetVfreq.UseVisualStyleBackColor = true;
             bGetVfreq.Click += bGetVfreq_Click;
             // 
             // bGetVamp
             // 
             bGetVamp.Font = new Font("Times New Roman", 14F);
-            bGetVamp.Location = new Point(181, 186);
+            bGetVamp.Location = new Point(181, 54);
             bGetVamp.Margin = new Padding(4, 5, 4, 5);
             bGetVamp.Name = "bGetVamp";
             bGetVamp.Size = new Size(64, 40);
             bGetVamp.TabIndex = 71;
-            bGetVamp.Text = "get";
+            bGetVamp.Text = "load";
             bGetVamp.UseVisualStyleBackColor = true;
             bGetVamp.Click += bGetVamp_Click;
             // 
             // bSendVoff
             // 
             bSendVoff.Font = new Font("Times New Roman", 14F);
-            bSendVoff.Location = new Point(105, 437);
+            bSendVoff.Location = new Point(105, 305);
             bSendVoff.Margin = new Padding(4, 5, 4, 5);
             bSendVoff.Name = "bSendVoff";
             bSendVoff.Size = new Size(71, 40);
@@ -1019,7 +857,7 @@ namespace controller
             // txtVoff
             // 
             txtVoff.Font = new Font("Times New Roman", 12F);
-            txtVoff.Location = new Point(25, 441);
+            txtVoff.Location = new Point(25, 309);
             txtVoff.Margin = new Padding(4, 5, 4, 5);
             txtVoff.Name = "txtVoff";
             txtVoff.Size = new Size(72, 30);
@@ -1029,7 +867,7 @@ namespace controller
             // label12
             // 
             label12.Font = new Font("Times New Roman", 14F);
-            label12.Location = new Point(6, 401);
+            label12.Location = new Point(6, 269);
             label12.Margin = new Padding(4, 0, 4, 0);
             label12.MaximumSize = new Size(200, 33);
             label12.MinimumSize = new Size(240, 33);
@@ -1042,7 +880,7 @@ namespace controller
             // bSendVon
             // 
             bSendVon.Font = new Font("Times New Roman", 14F);
-            bSendVon.Location = new Point(105, 360);
+            bSendVon.Location = new Point(105, 228);
             bSendVon.Margin = new Padding(4, 5, 4, 5);
             bSendVon.Name = "bSendVon";
             bSendVon.Size = new Size(71, 40);
@@ -1054,7 +892,7 @@ namespace controller
             // txtVon
             // 
             txtVon.Font = new Font("Times New Roman", 12F);
-            txtVon.Location = new Point(25, 363);
+            txtVon.Location = new Point(25, 231);
             txtVon.Margin = new Padding(4, 5, 4, 5);
             txtVon.Name = "txtVon";
             txtVon.Size = new Size(72, 30);
@@ -1064,7 +902,7 @@ namespace controller
             // label13
             // 
             label13.Font = new Font("Times New Roman", 14F);
-            label13.Location = new Point(6, 325);
+            label13.Location = new Point(6, 193);
             label13.Margin = new Padding(4, 0, 4, 0);
             label13.MaximumSize = new Size(200, 33);
             label13.MinimumSize = new Size(240, 33);
@@ -1077,7 +915,7 @@ namespace controller
             // bSendVfreq
             // 
             bSendVfreq.Font = new Font("Times New Roman", 14F);
-            bSendVfreq.Location = new Point(105, 269);
+            bSendVfreq.Location = new Point(105, 137);
             bSendVfreq.Margin = new Padding(4, 5, 4, 5);
             bSendVfreq.Name = "bSendVfreq";
             bSendVfreq.Size = new Size(71, 40);
@@ -1089,7 +927,7 @@ namespace controller
             // txtVfreq
             // 
             txtVfreq.Font = new Font("Times New Roman", 12F);
-            txtVfreq.Location = new Point(25, 273);
+            txtVfreq.Location = new Point(25, 141);
             txtVfreq.Margin = new Padding(4, 5, 4, 5);
             txtVfreq.Name = "txtVfreq";
             txtVfreq.Size = new Size(72, 30);
@@ -1099,20 +937,20 @@ namespace controller
             // label14
             // 
             label14.Font = new Font("Times New Roman", 14F);
-            label14.Location = new Point(6, 235);
+            label14.Location = new Point(6, 103);
             label14.Margin = new Padding(4, 0, 4, 0);
             label14.MaximumSize = new Size(200, 33);
             label14.MinimumSize = new Size(240, 33);
             label14.Name = "label14";
             label14.Size = new Size(240, 33);
             label14.TabIndex = 60;
-            label14.Text = "Freq, 1-10 Hz";
+            label14.Text = "Freq, 1-15 Hz";
             label14.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // bSendVamp
             // 
             bSendVamp.Font = new Font("Times New Roman", 14F);
-            bSendVamp.Location = new Point(105, 186);
+            bSendVamp.Location = new Point(105, 54);
             bSendVamp.Margin = new Padding(4, 5, 4, 5);
             bSendVamp.Name = "bSendVamp";
             bSendVamp.Size = new Size(71, 40);
@@ -1124,33 +962,182 @@ namespace controller
             // label15
             // 
             label15.Font = new Font("Times New Roman", 14F);
-            label15.Location = new Point(6, 155);
+            label15.Location = new Point(6, 23);
             label15.Margin = new Padding(4, 0, 4, 0);
             label15.MaximumSize = new Size(200, 33);
             label15.MinimumSize = new Size(240, 33);
             label15.Name = "label15";
             label15.Size = new Size(240, 33);
             label15.TabIndex = 58;
-            label15.Text = "Amp (P-P), 0-0.2-5 mA";
+            label15.Text = "Amp (P-P), 0-0.2-4 mA";
             label15.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // txtVAmp
             // 
             txtVAmp.Font = new Font("Times New Roman", 12F);
-            txtVAmp.Location = new Point(25, 189);
+            txtVAmp.Location = new Point(25, 57);
             txtVAmp.Margin = new Padding(4, 5, 4, 5);
             txtVAmp.Name = "txtVAmp";
             txtVAmp.Size = new Size(72, 30);
             txtVAmp.TabIndex = 57;
             txtVAmp.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
+            // bGetV2
+            // 
+            bGetV2.Font = new Font("Times New Roman", 14F);
+            bGetV2.Location = new Point(1254, 997);
+            bGetV2.Margin = new Padding(4, 5, 4, 5);
+            bGetV2.Name = "bGetV2";
+            bGetV2.Size = new Size(64, 40);
+            bGetV2.TabIndex = 82;
+            bGetV2.Text = "get";
+            bGetV2.UseVisualStyleBackColor = true;
+            bGetV2.Visible = false;
+            bGetV2.Click += bGetV2_Click;
+            // 
+            // bSendV2
+            // 
+            bSendV2.Font = new Font("Times New Roman", 14F);
+            bSendV2.Location = new Point(1178, 997);
+            bSendV2.Margin = new Padding(4, 5, 4, 5);
+            bSendV2.Name = "bSendV2";
+            bSendV2.Size = new Size(71, 40);
+            bSendV2.TabIndex = 81;
+            bSendV2.Text = "set";
+            bSendV2.UseVisualStyleBackColor = true;
+            bSendV2.Visible = false;
+            bSendV2.Click += bSendV2_Click;
+            // 
+            // label10
+            // 
+            label10.Font = new Font("Times New Roman", 14F);
+            label10.Location = new Point(1079, 966);
+            label10.Margin = new Padding(4, 0, 4, 0);
+            label10.MaximumSize = new Size(200, 33);
+            label10.MinimumSize = new Size(240, 33);
+            label10.Name = "label10";
+            label10.Size = new Size(240, 33);
+            label10.TabIndex = 80;
+            label10.Text = "Anode, 2-5";
+            label10.TextAlign = ContentAlignment.MiddleCenter;
+            label10.Visible = false;
+            // 
+            // txtV2
+            // 
+            txtV2.Font = new Font("Times New Roman", 12F);
+            txtV2.Location = new Point(1098, 1000);
+            txtV2.Margin = new Padding(4, 5, 4, 5);
+            txtV2.Name = "txtV2";
+            txtV2.Size = new Size(72, 30);
+            txtV2.TabIndex = 79;
+            txtV2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            txtV2.Visible = false;
+            // 
+            // bGetV1
+            // 
+            bGetV1.Font = new Font("Times New Roman", 14F);
+            bGetV1.Location = new Point(1254, 926);
+            bGetV1.Margin = new Padding(4, 5, 4, 5);
+            bGetV1.Name = "bGetV1";
+            bGetV1.Size = new Size(64, 40);
+            bGetV1.TabIndex = 78;
+            bGetV1.Text = "get";
+            bGetV1.UseVisualStyleBackColor = true;
+            bGetV1.Visible = false;
+            bGetV1.Click += bGetV1_Click;
+            // 
+            // bSendV1
+            // 
+            bSendV1.Font = new Font("Times New Roman", 14F);
+            bSendV1.Location = new Point(1178, 926);
+            bSendV1.Margin = new Padding(4, 5, 4, 5);
+            bSendV1.Name = "bSendV1";
+            bSendV1.Size = new Size(71, 40);
+            bSendV1.TabIndex = 77;
+            bSendV1.Text = "set";
+            bSendV1.UseVisualStyleBackColor = true;
+            bSendV1.Visible = false;
+            bSendV1.Click += bSendV1_Click;
+            // 
+            // label11
+            // 
+            label11.Font = new Font("Times New Roman", 14F);
+            label11.Location = new Point(1079, 895);
+            label11.Margin = new Padding(4, 0, 4, 0);
+            label11.MaximumSize = new Size(200, 33);
+            label11.MinimumSize = new Size(240, 33);
+            label11.Name = "label11";
+            label11.Size = new Size(240, 33);
+            label11.TabIndex = 76;
+            label11.Text = "Cathode, 1-4";
+            label11.TextAlign = ContentAlignment.MiddleCenter;
+            label11.Visible = false;
+            // 
+            // txtV1
+            // 
+            txtV1.Font = new Font("Times New Roman", 12F);
+            txtV1.Location = new Point(1098, 929);
+            txtV1.Margin = new Padding(4, 5, 4, 5);
+            txtV1.Name = "txtV1";
+            txtV1.Size = new Size(72, 30);
+            txtV1.TabIndex = 75;
+            txtV1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            txtV1.Visible = false;
+            // 
+            // bSetMaxBlock
+            // 
+            bSetMaxBlock.Font = new Font("Times New Roman", 14F);
+            bSetMaxBlock.Location = new Point(906, 26);
+            bSetMaxBlock.Margin = new Padding(4, 5, 4, 5);
+            bSetMaxBlock.Name = "bSetMaxBlock";
+            bSetMaxBlock.Size = new Size(71, 40);
+            bSetMaxBlock.TabIndex = 88;
+            bSetMaxBlock.Text = "set";
+            bSetMaxBlock.UseVisualStyleBackColor = true;
+            bSetMaxBlock.Click += bSetMaxBlock_Click;
+            // 
+            // txtMaxVNB
+            // 
+            txtMaxVNB.Font = new Font("Times New Roman", 12F);
+            txtMaxVNB.Location = new Point(826, 33);
+            txtMaxVNB.Margin = new Padding(4, 5, 4, 5);
+            txtMaxVNB.Name = "txtMaxVNB";
+            txtMaxVNB.Size = new Size(72, 30);
+            txtMaxVNB.TabIndex = 87;
+            txtMaxVNB.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            // 
+            // label17
+            // 
+            label17.Font = new Font("Times New Roman", 14F);
+            label17.Location = new Point(694, 32);
+            label17.Margin = new Padding(4, 0, 4, 0);
+            label17.MaximumSize = new Size(200, 33);
+            label17.MinimumSize = new Size(50, 33);
+            label17.Name = "label17";
+            label17.Size = new Size(126, 33);
+            label17.TabIndex = 86;
+            label17.Text = "Max VNB";
+            label17.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // bBlockMax
+            // 
+            bBlockMax.Font = new Font("Times New Roman", 14F);
+            bBlockMax.Location = new Point(982, 29);
+            bBlockMax.Margin = new Padding(4, 5, 4, 5);
+            bBlockMax.Name = "bBlockMax";
+            bBlockMax.Size = new Size(61, 37);
+            bBlockMax.TabIndex = 85;
+            bBlockMax.Text = "get";
+            bBlockMax.UseVisualStyleBackColor = true;
+            bBlockMax.Click += bBlockMax_Click;
+            // 
             // bStimMax
             // 
             bStimMax.Font = new Font("Times New Roman", 14F);
-            bStimMax.Location = new Point(312, 935);
+            bStimMax.Location = new Point(375, 28);
             bStimMax.Margin = new Padding(4, 5, 4, 5);
             bStimMax.Name = "bStimMax";
-            bStimMax.Size = new Size(64, 79);
+            bStimMax.Size = new Size(154, 40);
             bStimMax.TabIndex = 84;
             bStimMax.Text = "Max Stim";
             bStimMax.UseVisualStyleBackColor = true;
@@ -1159,10 +1146,10 @@ namespace controller
             // bZmin
             // 
             bZmin.Font = new Font("Times New Roman", 14F);
-            bZmin.Location = new Point(401, 935);
+            bZmin.Location = new Point(537, 26);
             bZmin.Margin = new Padding(4, 5, 4, 5);
             bZmin.Name = "bZmin";
-            bZmin.Size = new Size(81, 79);
+            bZmin.Size = new Size(149, 45);
             bZmin.TabIndex = 86;
             bZmin.Text = "Min Z";
             bZmin.UseVisualStyleBackColor = true;
@@ -1171,45 +1158,94 @@ namespace controller
             // ckVNB
             // 
             ckVNB.AutoSize = true;
-            ckVNB.Location = new Point(318, 275);
+            ckVNB.Location = new Point(318, 238);
             ckVNB.Name = "ckVNB";
-            ckVNB.Size = new Size(134, 24);
+            ckVNB.Size = new Size(127, 24);
             ckVNB.TabIndex = 87;
-            ckVNB.Text = "Use Sine Wave?";
+            ckVNB.Text = "Use Sine Wave";
             ckVNB.UseVisualStyleBackColor = true;
             ckVNB.CheckedChanged += ckVNB_CheckedChanged;
             // 
-            // rbXLR
+            // chkDev
             // 
-            rbXLR.AutoSize = true;
-            rbXLR.CheckAlign = ContentAlignment.BottomCenter;
-            rbXLR.Location = new Point(61, 172);
-            rbXLR.Name = "rbXLR";
-            rbXLR.Size = new Size(38, 40);
-            rbXLR.TabIndex = 71;
-            rbXLR.Text = "XLR";
-            rbXLR.UseVisualStyleBackColor = true;
-            rbXLR.CheckedChanged += rbSignalMode_CheckedChange;
+            chkDev.AutoSize = true;
+            chkDev.Location = new Point(6, 896);
+            chkDev.Name = "chkDev";
+            chkDev.Size = new Size(156, 24);
+            chkDev.TabIndex = 88;
+            chkDev.Text = "Developer Options";
+            chkDev.UseVisualStyleBackColor = true;
+            chkDev.CheckedChanged += chkDev_CheckedChanged;
+            // 
+            // groupDev
+            // 
+            groupDev.Controls.Add(bDownloadLogs);
+            groupDev.Controls.Add(bSetMaxBlock);
+            groupDev.Controls.Add(bClearLogs);
+            groupDev.Controls.Add(bStimMax);
+            groupDev.Controls.Add(txtMaxVNB);
+            groupDev.Controls.Add(bZmin);
+            groupDev.Controls.Add(bBlockMax);
+            groupDev.Controls.Add(label17);
+            groupDev.Enabled = false;
+            groupDev.Location = new Point(6, 926);
+            groupDev.Name = "groupDev";
+            groupDev.Size = new Size(1055, 81);
+            groupDev.TabIndex = 83;
+            groupDev.TabStop = false;
+            groupDev.Visible = false;
+            // 
+            // label16
+            // 
+            label16.Enabled = false;
+            label16.Font = new Font("Times New Roman", 14F);
+            label16.Location = new Point(196, 143);
+            label16.Margin = new Padding(4, 0, 4, 0);
+            label16.MaximumSize = new Size(200, 33);
+            label16.MinimumSize = new Size(10, 33);
+            label16.Name = "label16";
+            label16.Size = new Size(124, 33);
+            label16.TabIndex = 89;
+            label16.Text = "Filename:";
+            label16.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // chkSave
+            // 
+            chkSave.AutoSize = true;
+            chkSave.Location = new Point(12, 135);
+            chkSave.Name = "chkSave";
+            chkSave.Size = new Size(98, 24);
+            chkSave.TabIndex = 90;
+            chkSave.Text = "Save Data";
+            chkSave.UseVisualStyleBackColor = true;
+            chkSave.CheckedChanged += chkSave_CheckedChanged;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             AutoScroll = true;
-            ClientSize = new Size(1918, 1024);
+            ClientSize = new Size(1918, 1055);
+            Controls.Add(bGetV2);
+            Controls.Add(chkSave);
+            Controls.Add(bSendV2);
+            Controls.Add(label10);
+            Controls.Add(label16);
+            Controls.Add(txtV2);
+            Controls.Add(groupDev);
+            Controls.Add(bGetV1);
+            Controls.Add(chkDev);
+            Controls.Add(bSendV1);
             Controls.Add(ckVNB);
-            Controls.Add(bZmin);
-            Controls.Add(bStimMax);
+            Controls.Add(label11);
             Controls.Add(groupSineWave);
+            Controls.Add(txtV1);
             Controls.Add(labelZ);
             Controls.Add(getImp);
             Controls.Add(groupSignalMode);
             Controls.Add(labelV);
             Controls.Add(txtFname);
-            Controls.Add(bSave);
             Controls.Add(bView);
-            Controls.Add(bDownloadLogs);
-            Controls.Add(bClearLogs);
             Controls.Add(bGetC2);
             Controls.Add(bSendC2);
             Controls.Add(label9);
@@ -1238,7 +1274,6 @@ namespace controller
             Controls.Add(bSendPR);
             Controls.Add(txtPR);
             Controls.Add(label4);
-            Controls.Add(bStimOff);
             Controls.Add(bStimOn);
             Controls.Add(bSendPF);
             Controls.Add(txtPF);
@@ -1264,6 +1299,8 @@ namespace controller
             groupSignalMode.PerformLayout();
             groupSineWave.ResumeLayout(false);
             groupSineWave.PerformLayout();
+            groupDev.ResumeLayout(false);
+            groupDev.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -1278,7 +1315,6 @@ namespace controller
         public Button bSendPF;
         public TextBox txtPF;
         public System.Windows.Forms.Label label2;
-        public Button bStimOff;
         public Button bStimOn;
         public Button bSendTN;
         public TextBox txtTN;
@@ -1313,7 +1349,6 @@ namespace controller
         private RadioButton rbEMG2;
         private RadioButton rbEMG1;
         public TextBox txtFname;
-        public Button bSave;
         public Button bView;
         public Button bDownloadLogs;
         public Button bClearLogs;
@@ -1356,5 +1391,9 @@ namespace controller
         public System.Windows.Forms.Label label17;
         private CheckBox ckVNB;
         private RadioButton rbXLR;
+        private CheckBox chkDev;
+        private GroupBox groupDev;
+        public System.Windows.Forms.Label label16;
+        private CheckBox chkSave;
     }
 }
