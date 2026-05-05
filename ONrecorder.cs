@@ -26,7 +26,7 @@ namespace controller
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
             //Run the form
-            Application.Run(new Form1());
+            Application.Run(new DeviceSelectionForm());
 
             Logger.Close();
         }

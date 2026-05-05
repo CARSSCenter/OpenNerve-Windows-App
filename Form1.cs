@@ -33,12 +33,19 @@ namespace controller
 {
     public partial class Form1 : Form
     {
-        public Form1()
+        private DeviceSelectionForm? _selectionForm;
+        private bool _disconnecting = false;
+
+        private Form1() { InitializeComponent(); } // designer only
+
+        public Form1(ulong deviceAddress, byte[] advData, DeviceSelectionForm selectionForm)
         {
             InitializeComponent();
-            this.FormClosing += Form1_FormClosing;  // wire up quit/close handler
+            this.FormClosing += Form1_FormClosing;
+            _selectionForm = selectionForm;
+            address = deviceAddress;
+            Array.Copy(advData, bAdv, Math.Min(advData.Length, bAdv.Length));
         }
-        private static BluetoothLEAdvertisementWatcher watcher;
         private static ulong address = 0;
         private static BluetoothLEDevice BLEDevice;
         private GattDeviceService? nusService;
@@ -681,7 +688,7 @@ namespace controller
                         QueueSendToRemote(packet);
                     }
                     else
-                    { Debug.WriteLine("BLEDevice is null"); Application.Exit(); }
+                    { Debug.WriteLine("BLEDevice is null"); DoDisconnect(); }
                 }
                 catch (Exception ex)
                 {
@@ -879,28 +886,7 @@ namespace controller
                 Debug.WriteLine($"Error: {ex.Message}");
             }
         }
-        private void Watcher_Received(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs args)
-        {
-            BluetoothLEAdvertisement adv = args.Advertisement;
-            if (adv.ManufacturerData.Count >= 1)
-            {
-                foreach (BluetoothLEManufacturerData md in adv.ManufacturerData)
-                {
-                    if (md.CompanyId == 0xFFFF || md.CompanyId == 0xF0F0)
-                    {
-                        address = args.BluetoothAddress;
-                        DataReader reader = DataReader.FromBuffer(md.Data);
-                        reader.ReadBytes(bAdv);
-                        if (md.CompanyId == 0xFFFF) ///DVT
-                        { bAdv[23] = 1; }
-                        if (md.CompanyId == 0xF0F0) ///SRS 
-                        { bAdv[23] = 2; }
-                        watcher.Stop();
-                        break;
-                    }
-                }
-            }
-        }
+
         private void SendFromRemote(GattCharacteristic sender, GattValueChangedEventArgs args)
         {
             var reader = DataReader.FromBuffer(args.CharacteristicValue);
@@ -1588,7 +1574,7 @@ namespace controller
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"SendToRemote Error {ex.Message}"); Application.Exit();
+                    Debug.WriteLine($"SendToRemote Error {ex.Message}"); DoDisconnect();
                 }
             }
         }
@@ -1674,6 +1660,8 @@ namespace controller
 
         public async void DoDisconnect()
         {
+            if (_disconnecting) return;
+            _disconnecting = true;
             Debug.WriteLine("Disconnecting.");
 
             BLEtimer?.Stop();
@@ -1719,8 +1707,13 @@ namespace controller
                 Debug.WriteLine("Closed COM ports");
             }
 
-            Application.Exit();
-
+            if (_selectionForm != null)
+            {
+                _selectionForm.StartScanning();
+                _selectionForm.Show();
+            }
+            if (!IsDisposed && IsHandleCreated)
+                this.Close();
         }
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -1731,22 +1724,7 @@ namespace controller
 
             if (useBluetooth)
             {
-                //BLE connection
-                try
-                {
-                    watcher = new BluetoothLEAdvertisementWatcher
-                    { ScanningMode = BluetoothLEScanningMode.Active };
-                    watcher.Received += Watcher_Received;
-                    watcher.Start();
-                    while (watcher.Status != BluetoothLEAdvertisementWatcherStatus.Stopped)
-                    { Application.DoEvents(); }
-                    watcher.Received -= Watcher_Received;
-                    _ = ConnectAsync();
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error: {ex.Message}"); Application.Exit();
-                }
+                _ = ConnectAsync();
             }
             else
             {
