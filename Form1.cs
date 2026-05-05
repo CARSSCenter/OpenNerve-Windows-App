@@ -120,6 +120,20 @@ namespace controller
         System.Timers.Timer XLtimer = new System.Timers.Timer();
         private int PlotLen = 60; //Seconds to plot for
 
+        // Rolling display buffer
+        private double[] _rollBuf;
+        private int      _rollHead  = 0;
+        private int      _rollCount = 0;
+
+        // DC tracking (EMA — primes the HP filter at startup to avoid large transient)
+        private double       _dcEstimate = 0.0;
+        private const double DcAlpha     = 0.001;
+
+        // Persistent biquad filter states (reset in ResetSignalState)
+        private BiquadState _hpFilter    = new BiquadState();
+        private BiquadState _lpFilter    = new BiquadState();
+        private BiquadState _notchFilter = new BiquadState();
+
         //EMG / ECG / ENG etc.
         private enum SignalMode
         {
@@ -189,9 +203,10 @@ namespace controller
                 groupSignalMode.Enabled = false;
                 byte EMGch = (byte)CurrentSignalMode;
 
+                if (EMGch != 5) ResetSignalState();   // allocate buffer + reset filters
+
                 formsPlot1.Plot.Clear();
-                formsPlot1.Plot.Axes.SetLimitsX(0, PlotLen); //sec
-                formsPlot1.Plot.Axes.SetLimitsY(-80, 80);
+                formsPlot1.Plot.Axes.SetLimitsX(0, PlotLen); //sec (PlotLen set by ResetSignalState)
 
                 byte[] bSampleRate = BitConverter.GetBytes(sampleRate);
                 if (EMGch == 5)
@@ -205,7 +220,7 @@ namespace controller
                     byte[] data = [GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3]];
                     Sending(data);
                 }
-                
+
                 labelTX.Text = "Getting Data";
                 Debug.WriteLine("TX Getting Data");
             }
@@ -236,11 +251,15 @@ namespace controller
         {
             if (!isSaving)
             {
-                formsPlot1.Plot.Clear();
-                formsPlot1.Plot.Axes.SetLimitsX(0, PlotLen); //sec
-                formsPlot1.Plot.Axes.SetLimitsY(-80, 80);
-
                 // --- START SAVING ---
+                byte EMGch = (byte)CurrentSignalMode;
+
+                // Reset buffer + filters first so sampleRate/DecValue are current before CSV header
+                if (EMGch != 5) ResetSignalState();
+
+                formsPlot1.Plot.Clear();
+                formsPlot1.Plot.Axes.SetLimitsX(0, PlotLen); //sec (PlotLen set by ResetSignalState)
+
                 bSave.Text = "Stop Saving";
                 bView.Enabled = false;
                 groupSignalMode.Enabled = false;
@@ -282,8 +301,6 @@ namespace controller
                 csvWriter.Flush();
 
                 // ---- Send START command to device ----
-                byte EMGch = (byte)CurrentSignalMode;   //= rbEMG1.Checked ? (byte)4 : (byte)4;
-
                 byte[] bSampleRate = BitConverter.GetBytes(sampleRate);
 
                 if (EMGch == 5)
@@ -297,7 +314,6 @@ namespace controller
                     byte[] data = [GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3]];
                     Sending(data);
                 }
-                //byte[] data = { GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3] };
                 
             }
             else
@@ -905,32 +921,21 @@ namespace controller
                         int CurPacket = bResponse[3];
                         for (int i = 0; i < 100; i++)
                         {
-                            //EMGdata[CurPacket * PacketLen + i] = Convert.ToDouble((ushort)((bResponse[i * 2 + 5] << 8) + bResponse[i * 2 + 4])); //V 
                             ushort raw = (ushort)((bResponse[i * 2 + 5] << 8) + bResponse[i * 2 + 4]);
                             EMGdata[CurPacket * PacketLen + i] = Convert.ToDouble(raw);
-
-                            // ----------- CSV LOGGING HERE -----------
                             packetRaw[i] = raw;
                             bufferRaw[CurPacket * 100 + i] = raw;
                         }
-                        if (CurPacket == PacketCnt - 1)
-                        {
-                            /*
-                            if (CurrentSignalMode == SignalMode.ECGR)
-                            {
-                                ProcessECGR(EMGdata);
-                            } else
-                            {
-                                ProcessPlotSave(EMGdata);
-                            }
-                            */
 
+                        // Update rolling display on every packet for responsive live view
+                        UpdateRollingDisplay(CurPacket);
+
+                        // CSV save fires only after all 100 packets are received
+                        if (CurPacket == PacketCnt - 1)
                             ProcessPlotSave(EMGdata);
-                        }
                     }
                     else
                     {
-                        //Debug.WriteLine($"RX {Convert.ToHexString(bResponse)}");
                         labelRX.BeginInvoke((Action)(() => labelRX.Text = "Stopped Data"));
                     }
                     break;
@@ -1885,147 +1890,83 @@ namespace controller
         {
             if (!(sender is RadioButton rb) || !rb.Checked) return;
 
-            if (rb == rbEMG1)
-            {
-                CurrentSignalMode = SignalMode.ECGH;
+            if      (rb == rbEMG1) CurrentSignalMode = SignalMode.ECGH;
+            else if (rb == rbEMG2) CurrentSignalMode = SignalMode.ECGR;
+            else if (rb == rbEMG3) CurrentSignalMode = SignalMode.EMG1;
+            else if (rb == rbEMG4) CurrentSignalMode = SignalMode.EMG2;
+            else if (rb == rbXLR)  CurrentSignalMode = SignalMode.XL;
 
-                //Change constants for analyzing signal
-                sampleRate = 256; // Hz
-                DecValue = 1;
-                DECPeriod = (int)(1000 * DecValue / sampleRate); // msec
-            }
-            else if (rb == rbEMG2)
-            {
-                CurrentSignalMode = SignalMode.ECGR;
+            if (CurrentSignalMode != SignalMode.XL)
+                ResetSignalState();
 
-                //Change constants for analyzing signal
-                sampleRate = 256; // Hz
-                DecValue = 38;
-                FFTsize = 256; //10000/DecValue = 263
-                inMaxValue = 3; //mV
-                outMaxValue = 4; //mV
-                DECPeriod = (int)(1000 * DecValue / sampleRate); // msec
-            }
-            else if (rb == rbEMG3)
-            {
-                CurrentSignalMode = SignalMode.EMG1;
+            Debug.WriteLine($"Signal mode changed to {CurrentSignalMode}");
+        }
 
-                //Change constants for analyzing signal
-                sampleRate = 6400; // Hz
-                DecValue = 10;
-                DECPeriod = (int)(1000 * DecValue / sampleRate);
-            }
-            else if (rb == rbEMG4)
-            {
-                CurrentSignalMode = SignalMode.EMG2;
+        private void ApplySignalConfig()
+        {
+            if (!SignalConfigs.TryGetValue(CurrentSignalMode, out var cfg)) return;
+            sampleRate  = cfg.SampleRate;
+            DecValue    = cfg.DecValue;
+            FFTsize     = cfg.FFTsize;
+            inMaxValue  = cfg.InMaxValue;
+            outMaxValue = cfg.OutMaxValue;
+            PlotLen     = cfg.PlotSeconds;
+            DECPeriod   = (int)(1000.0 * cfg.DecValue / cfg.SampleRate);
+        }
 
-                //Change constants for analyzing signal
-                sampleRate = 6400; // Hz
-                DecValue = 10;
-                DECPeriod = (int)(1000 * DecValue / sampleRate);
-            }
-            else if (rb == rbXLR)
-            {
-                CurrentSignalMode = SignalMode.XL;
-            }
+        private void ResetSignalState()
+        {
+            ApplySignalConfig();
+            if (!SignalConfigs.TryGetValue(CurrentSignalMode, out var cfg)) return;
 
-                Debug.WriteLine($"Signal mode changed to {CurrentSignalMode}");
+            double displayHz = cfg.SampleRate / (double)cfg.DecValue;
+            int bufSize = (int)(cfg.PlotSeconds * displayHz);
+            _rollBuf    = new double[bufSize];
+            _rollHead   = 0;
+            _rollCount  = 0;
+            _dcEstimate = 0.0;
+
+            double fs = cfg.SampleRate;
+
+            // HP filter (Butterworth 2nd-order high-pass)
+            { double w = 2 * Math.PI * cfg.HpHz / fs, cw = Math.Cos(w), sw = Math.Sin(w), al = sw / (2 * 0.7071), a0 = 1 + al;
+              _hpFilter.Reset((1 + cw) / 2 / a0, -(1 + cw) / a0, (1 + cw) / 2 / a0, -2 * cw / a0, (1 - al) / a0); }
+
+            // LP filter (Butterworth 2nd-order low-pass)
+            { double w = 2 * Math.PI * cfg.LpHz / fs, cw = Math.Cos(w), sw = Math.Sin(w), al = sw / (2 * 0.7071), a0 = 1 + al;
+              _lpFilter.Reset((1 - cw) / 2 / a0, (1 - cw) / a0, (1 - cw) / 2 / a0, -2 * cw / a0, (1 - al) / a0); }
+
+            // Notch filter, or identity pass-through if NotchHz==0
+            if (cfg.NotchHz > 0)
+            { double w = 2 * Math.PI * cfg.NotchHz / fs, cw = Math.Cos(w), sw = Math.Sin(w), al = sw / (2 * cfg.NotchQ), a0 = 1 + al;
+              _notchFilter.Reset(1 / a0, -2 * cw / a0, 1 / a0, -2 * cw / a0, (1 - al) / a0); }
+            else
+            { _notchFilter.Reset(1, 0, 0, 0, 0); }
+
+            Debug.WriteLine($"ResetSignalState: mode={CurrentSignalMode} bufSize={bufSize} fs={cfg.SampleRate} dec={cfg.DecValue}");
         }
 
         private void ProcessPlotSave(double[] raw)
         {
-            if (raw == null || raw.Length < 10)
-            {
-                Debug.WriteLine("Signal packet too short!");
-                return;
-            }
+            if (raw == null || raw.Length < 10) { Debug.WriteLine("Signal packet too short!"); return; }
 
-            // DecValue is only for making plotting faster in this function's implementation (only plot every N values)
-            // plotDec = 1 is to plot every value
-            int plotDec = Math.Max(1, DecValue);
-            double fsPlot = sampleRate / plotDec;
-            double dtPlot = 1.0 / fsPlot;
-
-            // Copy + remove DC (simple mean subtract)
-            double mean = raw.Average();
-            double[] x = raw.Select(v => v - mean).ToArray();
-
-            // Filter cutoffs based on signal type
-            double hpHz = 1.0;
-            double desiredLpHz = 100.0;
-
-            switch (CurrentSignalMode)
-            {
-                case SignalMode.ECGH:
-                    hpHz = 0.5;
-                    desiredLpHz = 40.0;
-                    break;
-                case SignalMode.ECGR:
-                    hpHz = 0.01;
-                    desiredLpHz = 20;
-                    break;
-                case SignalMode.EMG1:   //For now, assuming this is skeletal muscle EMG / spike bursts from smooth muscles
-                    hpHz = 20.0;
-                    desiredLpHz = 500.0;
-                    break;
-                case SignalMode.EMG2:   //For now, assuming this is eCAPs for testing purposes
-                    hpHz = 300.0;
-                    desiredLpHz = 3000.0;
-                    break;
-                default:
-                    break;
-            }
-
-            //If LPF max isn't achievable based on sampling frequency, adjust
-            double maxSafeLpHz = 0.45 * (fsPlot / 2.0) * 2.0;
-            double lpHz = Math.Min(desiredLpHz, maxSafeLpHz);
-            //Debug.WriteLine("LPF: " + lpHz);
-
-            //TODO these are commented out for hardware testing, can add back in or change filtering parameters for actual use
-            //x = ApplyHighPassBiquad(x, sampleRate, hpHz);
-            //x = ApplyLowPassBiquad(x, sampleRate, lpHz);
-
-            // 60Hz notch filter
-            //x = ApplyNotchBiquad(x, sampleRate, 60.0, q: 30.0);
-
-            // Downsample plotting based on decimation factor
-            double[] yPlot = (plotDec == 1) ? x : DownsampleByPicking(x, plotDec);
-            formsPlot1.BeginInvoke((Action)(() =>
-            {
-                formsPlot1.Plot.Clear();
-                formsPlot1.Plot.Add.Signal(yPlot, dtPlot);
-                // Optional: axes labels
-                formsPlot1.Plot.XLabel("Time (s)");
-                formsPlot1.Plot.YLabel("ECG (a.u.)");
-                formsPlot1.Plot.Axes.AutoScale();
-                formsPlot1.Refresh();
-            }));
-
-            //Save data to CSV
             if (isSaving && csvWriter != null)
             {
+                double mean = raw.Average();
+                double[] xCsv = raw.Select(v => v - mean).ToArray();
+
                 long ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                StringBuilder sb = new StringBuilder(400000);
 
-                StringBuilder sb = new StringBuilder(400000); // preallocate for speed
-
-                //Raw data
                 sb.Append(ts);
-                for (int i = 0; i < bufferRaw.Length; i++)
-                    sb.Append($",{bufferRaw[i]}");
+                for (int i = 0; i < bufferRaw.Length; i++) sb.Append($",{bufferRaw[i]}");
                 sb.AppendLine();
 
-                //Filtered data
                 sb.Append(ts);
-                int decLen = x.Length;
-                for (int i = 0; i < decLen; i++)
-                    sb.Append($"," + x[i].ToString("F6"));
+                for (int i = 0; i < xCsv.Length; i++) sb.Append($",{xCsv[i]:F6}");
                 sb.AppendLine();
 
-                lock (csvLock)
-                {
-                    csvWriter.Write(sb.ToString());
-                    csvWriter.Flush();
-                }
+                lock (csvLock) { csvWriter.Write(sb.ToString()); csvWriter.Flush(); }
             }
         }
 
@@ -2126,6 +2067,74 @@ namespace controller
                     csvWriter.Flush();
                 }
             }
+        }
+
+        // -------- Rolling display helpers --------
+
+        private double[] LinearizeRingBuffer()
+        {
+            int count = _rollCount;
+            double[] snap = new double[count];
+            if (count == 0) return snap;
+
+            if (count < _rollBuf.Length)
+            {
+                Array.Copy(_rollBuf, 0, snap, 0, count);
+            }
+            else
+            {
+                // Buffer is full and wrapping: oldest sample sits at _rollHead
+                int fromHead = _rollBuf.Length - _rollHead;
+                Array.Copy(_rollBuf, _rollHead, snap, 0, fromHead);
+                Array.Copy(_rollBuf, 0, snap, fromHead, _rollHead);
+            }
+            return snap;
+        }
+
+        private void UpdateRollingDisplay(int curPacket)
+        {
+            if (_rollBuf == null) return;
+            if (!SignalConfigs.TryGetValue(CurrentSignalMode, out var cfg)) return;
+
+            // Extract the 100 raw samples for this packet
+            double[] packet = new double[PacketLen];
+            Array.Copy(EMGdata, curPacket * PacketLen, packet, 0, PacketLen);
+
+            // DC removal via exponential moving average (helps HP filter warm up)
+            for (int i = 0; i < packet.Length; i++)
+            {
+                _dcEstimate += DcAlpha * (packet[i] - _dcEstimate);
+                packet[i]   -= _dcEstimate;
+            }
+
+            // Incremental IIR filtering — state persists across packets
+            packet = _hpFilter.Process(packet);
+            packet = _lpFilter.Process(packet);
+            packet = _notchFilter.Process(packet); // identity pass-through if NotchHz==0
+
+            // Decimate and write into ring buffer (DecValue must divide PacketLen)
+            int samplesOut = PacketLen / cfg.DecValue;
+            for (int j = 0; j < samplesOut; j++)
+            {
+                _rollBuf[_rollHead] = packet[j * cfg.DecValue];
+                _rollHead = (_rollHead + 1) % _rollBuf.Length;
+                if (_rollCount < _rollBuf.Length) _rollCount++;
+            }
+
+            // Snapshot on the worker thread before crossing to the UI thread
+            double[] plotSnap = LinearizeRingBuffer();
+            double   dtPlot   = cfg.DecValue / (double)cfg.SampleRate;
+
+            formsPlot1.BeginInvoke((Action)(() =>
+            {
+                formsPlot1.Plot.Clear();
+                formsPlot1.Plot.Add.Signal(plotSnap, dtPlot);
+                formsPlot1.Plot.XLabel("Time (s)");
+                formsPlot1.Plot.YLabel("Signal (a.u.)");
+                formsPlot1.Plot.Axes.SetLimitsX(0, cfg.PlotSeconds);
+                formsPlot1.Plot.Axes.AutoScaleY();
+                formsPlot1.Refresh();
+            }));
         }
 
         //Helper functions
@@ -2442,6 +2451,57 @@ namespace controller
             System.Buffer.BlockCopy(linkedBLE, 0, payload, 104, 4);  //4 bytes linked BLE ID (all zeroes for now)
 
             return payload;
+        }
+
+        // -------- Per-mode configuration --------
+
+        private struct SignalModeConfig
+        {
+            public float  SampleRate;
+            public int    DecValue;        // must divide PacketLen (100) evenly
+            public int    FFTsize;
+            public int    InMaxValue, OutMaxValue;
+            public int    PlotSeconds;     // display window width
+            public double HpHz, LpHz;
+            public double NotchHz, NotchQ; // NotchHz=0 → identity (no notch)
+        }
+
+        private static readonly Dictionary<SignalMode, SignalModeConfig> SignalConfigs =
+            new Dictionary<SignalMode, SignalModeConfig>
+        {
+            [SignalMode.ECGH] = new SignalModeConfig { SampleRate=256,  DecValue=1,  FFTsize=256, InMaxValue=3, OutMaxValue=4, PlotSeconds=8, HpHz=0.5,  LpHz=40,   NotchHz=60, NotchQ=30 },
+            [SignalMode.ECGR] = new SignalModeConfig { SampleRate=256,  DecValue=1,  FFTsize=256, InMaxValue=3, OutMaxValue=4, PlotSeconds=8, HpHz=0.01, LpHz=20,   NotchHz=60, NotchQ=30 },
+            [SignalMode.EMG1] = new SignalModeConfig { SampleRate=6400, DecValue=10, FFTsize=256, InMaxValue=3, OutMaxValue=4, PlotSeconds=2, HpHz=20,   LpHz=500,  NotchHz=60, NotchQ=30 },
+            [SignalMode.EMG2] = new SignalModeConfig { SampleRate=6400, DecValue=10, FFTsize=256, InMaxValue=3, OutMaxValue=4, PlotSeconds=2, HpHz=300,  LpHz=3000, NotchHz=0,  NotchQ=30 },
+        };
+
+        // -------- Persistent biquad filter state --------
+
+        private class BiquadState
+        {
+            public double b0, b1, b2, a1, a2;
+            public double x1, x2, y1, y2;
+
+            public void Reset(double b0, double b1, double b2, double a1, double a2)
+            {
+                this.b0 = b0; this.b1 = b1; this.b2 = b2;
+                this.a1 = a1; this.a2 = a2;
+                x1 = x2 = y1 = y2 = 0.0;
+            }
+
+            public double[] Process(double[] x)
+            {
+                double[] y = new double[x.Length];
+                for (int n = 0; n < x.Length; n++)
+                {
+                    double x0 = x[n];
+                    double y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+                    y[n] = y0;
+                    x2 = x1; x1 = x0;
+                    y2 = y1; y1 = y0;
+                }
+                return y;
+            }
         }
 
     }
