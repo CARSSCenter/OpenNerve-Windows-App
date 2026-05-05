@@ -118,6 +118,16 @@ namespace controller
         private bool bXLFirst;
         private int StartX; //initial X value
         System.Timers.Timer XLtimer = new System.Timers.Timer();
+
+        // XLR rolling display buffer
+        private const int XlrDisplaySec  = 30;
+        private const int XlrDisplayRate = 5;  // Hz (dIncX10=2 → 0.2 s/sample)
+        private const int XlrBufSize     = XlrDisplaySec * XlrDisplayRate; // 150 entries
+        private double[] _xlrTimes = new double[XlrBufSize];
+        private double[] _xlrMags  = new double[XlrBufSize];
+        private int _xlrHead  = 0;
+        private int _xlrCount = 0;
+
         private int PlotLen = 60; //Seconds to plot for
 
         // Rolling display buffer
@@ -1347,9 +1357,10 @@ namespace controller
                     {
                         Debug.WriteLine("XLR Status ok");
                         XLtimer.Elapsed += XLtimer_Elapsed;
-                        XLtimer.AutoReset = true; // retrigger
-                        XLtimer.Interval = 1050; //  msec
+                        XLtimer.AutoReset = true;
+                        XLtimer.Interval = 250; // ms — poll at ~4 Hz for responsive display
                         XLtimer.Enabled = true;
+                        _xlrHead = 0; _xlrCount = 0; // reset rolling buffer on new session
                         if (bResponse[3] == AddrGtSp[0])
                         {
                             labelRX.BeginInvoke((Action)(() => labelRX.Text = "Started XL-G"));
@@ -1374,80 +1385,79 @@ namespace controller
                 case ACC_GET:
                     if ((bResponse[2] == 0) && (bResponse.Length >= 72)) // data is present
                     {
-                        int dLength = (bResponse.Length - 12) / 6 / DecFactor; //12=10+CRC16
-                        int CurX = 0; //from ms to ds using 0.01*
+                        int dLength = (bResponse.Length - 12) / 6 / DecFactor; // 12 = header + CRC16
+                        int CurX = 0;
 
-                        if (bXLFirst) //first record
-                        { 
-                            StartX = (int)(0.01 * BitConverter.ToUInt32(bResponse, 4)); 
-                            bXLFirst = false; }
+                        if (bXLFirst)
+                        { StartX = (int)(0.01 * BitConverter.ToUInt32(bResponse, 4)); bXLFirst = false; }
                         else
-                        { 
-                            CurX = (int)(0.01 * BitConverter.ToUInt32(bResponse, 4)) - StartX; 
-                        }
-                       
-                        if (dLength > PlotLen - (int)(0.1 * CurX)) { 
-                            dLength = PlotLen - (int)(0.1 * CurX); 
-                        }
+                        { CurX = (int)(0.01 * BitConverter.ToUInt32(bResponse, 4)) - StartX; }
 
-                        if (dLength <= 0) //plot full
-                        {
-                            bView.BeginInvoke((Action)(() => bView.PerformClick()));
-                            Debug.WriteLine("RX Data Done");
-                            break;
-                        }
+                        if (dLength <= 0) break;
 
                         double[] RAWdata = new double[dLength * DecFactor];
-                        double[] Xdata = new double[dLength];
-                        double[] Ydata = new double[dLength];
-                        
+                        double[] Xdata   = new double[dLength];
+                        double[] Ydata   = new double[dLength];
+
                         for (int i = 0; i < dLength * DecFactor; i++)
                         {
                             RAWdata[i] = Math.Sqrt(
-                            Math.Pow(Convert.ToDouble((unchecked((short)((bResponse[i * 6 + 11] << 8) + bResponse[i * 6 + 10])) >> 6)), 2) +
-                            Math.Pow(Convert.ToDouble((unchecked((short)((bResponse[i * 6 + 13] << 8) + bResponse[i * 6 + 12])) >> 6)), 2) +
-                            Math.Pow(Convert.ToDouble((unchecked((short)((bResponse[i * 6 + 15] << 8) + bResponse[i * 6 + 14])) >> 6)), 2));
+                                Math.Pow(Convert.ToDouble((unchecked((short)((bResponse[i * 6 + 11] << 8) + bResponse[i * 6 + 10])) >> 6)), 2) +
+                                Math.Pow(Convert.ToDouble((unchecked((short)((bResponse[i * 6 + 13] << 8) + bResponse[i * 6 + 12])) >> 6)), 2) +
+                                Math.Pow(Convert.ToDouble((unchecked((short)((bResponse[i * 6 + 15] << 8) + bResponse[i * 6 + 14])) >> 6)), 2));
                         }
 
                         for (int di = 0; di < dLength; di++)
                         {
-                            Xdata[di] = 0.1 * (CurX + dIncX10 * di); //from ds to s
-                            Ydata[di] = RAWdata.Skip(DecFactor * (di)).Take(DecFactor).ToArray().Average();
-                            //Debug.WriteLine("X=" + Xdata[di].ToString() + ", Y=" + Ydata[di].ToString() );
+                            Xdata[di] = 0.1 * (CurX + dIncX10 * di); // deciseconds → seconds
+                            Ydata[di] = RAWdata.Skip(DecFactor * di).Take(DecFactor).ToArray().Average();
                         }
 
-                        if (bResponse[3] == AddrGtSp[0])
+                        // Append new samples to rolling ring buffer
+                        for (int j = 0; j < dLength; j++)
                         {
-                            // Debug.WriteLine("Plotting " + bResponse[3].ToString());
-                            formsPlot1.BeginInvoke((Action)(() => {
-                                formsPlot1.Plot.Add.SignalXY(Xdata, Ydata, Colors.Red);
-                                formsPlot1.Plot.Axes.AutoScale();
-                                formsPlot1.Refresh();
-                            }));
-                        }
-                        else //AddrGtSp[1]
-                        {
-                            //Debug.WriteLine("Plotting");
-                            formsPlot1.BeginInvoke((Action)(() => formsPlot1.Plot.Add.SignalXY(Xdata, Ydata, Colors.Blue))); 
+                            _xlrTimes[_xlrHead] = Xdata[j];
+                            _xlrMags [_xlrHead] = Ydata[j];
+                            _xlrHead = (_xlrHead + 1) % XlrBufSize;
+                            if (_xlrCount < XlrBufSize) _xlrCount++;
                         }
 
-                        formsPlot1.BeginInvoke((Action)(() => formsPlot1.Refresh()));
-                        labelV.BeginInvoke((Action)(() => labelV.Text = dLength.ToString())); //+ ":" + (Math.Round(Xdata[0], 1)).ToString() + "-" + (Math.Round(Xdata[dLength - 1], 1)).ToString()));
-                        //Debug.WriteLine("Data Length: " + labelV.Text);
-                        //Debug.WriteLine("RX Data+");
+                        // Linearize ring buffer into contiguous snapshot arrays
+                        int snapCount = _xlrCount;
+                        double[] snapT = new double[snapCount];
+                        double[] snapM = new double[snapCount];
+                        int snapStart = _xlrCount < XlrBufSize ? 0 : _xlrHead;
+                        for (int k = 0; k < snapCount; k++)
+                        {
+                            int idx = (snapStart + k) % XlrBufSize;
+                            snapT[k] = _xlrTimes[idx];
+                            snapM[k] = _xlrMags [idx];
+                        }
+
+                        // Single Clear + redraw from rolling buffer — eliminates overlap
+                        formsPlot1.BeginInvoke((Action)(() =>
+                        {
+                            formsPlot1.Plot.Clear();
+                            formsPlot1.Plot.Add.SignalXY(snapT, snapM, Colors.Red);
+                            formsPlot1.Plot.Axes.AutoScale();
+                            formsPlot1.Refresh();
+                        }));
+
+                        labelV.BeginInvoke((Action)(() => labelV.Text = snapCount.ToString()));
                         labelRX.BeginInvoke((Action)(() => labelRX.Text = "Data+"));
-                        
-                        if (isSaving) //Save to CSV
+
+                        if (isSaving)
                         {
-                            csvWriter.WriteLine((XLN + 1) + "," + (0.1 * CurX) + "," + dLength + "," + string.Join(",", Ydata.Select(b => b.ToString("F3"))));
+                            csvWriter.WriteLine((XLN + 1) + "," + (0.1 * CurX) + "," + dLength + "," +
+                                                string.Join(",", Ydata.Select(b => b.ToString("F3"))));
                             csvWriter.Flush();
                         }
                     }
-                    else //bad status or no data
+                    else // bad status or no data
                     {
                         if (bResponse[2] == 1) { Debug.WriteLine("Buffer overflow"); }
                         else if (bResponse[2] == 2) { Debug.WriteLine("Comm Error"); }
-                        else { Debug.WriteLine("Bad data: " + (bResponse.Length - 12).ToString() + " < " + (bResponse[1] - 7).ToString()); }
+                        else { Debug.WriteLine("Bad data: " + (bResponse.Length - 12) + " < " + (bResponse[1] - 7)); }
                     }
                     break;
                 case ACC_STOP:
