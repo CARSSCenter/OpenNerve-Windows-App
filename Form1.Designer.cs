@@ -1223,7 +1223,7 @@ namespace controller
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
-            AutoScaleMode = AutoScaleMode.None; //Font;
+            AutoScaleMode = AutoScaleMode.Font;
             AutoScroll = true;
             ClientSize = new Size(1918, 1055);
             Controls.Add(bGetV2);
