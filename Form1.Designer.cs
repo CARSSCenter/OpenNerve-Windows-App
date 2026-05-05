@@ -106,6 +106,7 @@ namespace controller
             groupDev = new GroupBox();
             label16 = new System.Windows.Forms.Label();
             chkSave = new CheckBox();
+            chkUSB = new CheckBox();
             groupSignalMode.SuspendLayout();
             groupSineWave.SuspendLayout();
             groupDev.SuspendLayout();
@@ -1179,6 +1180,7 @@ namespace controller
             // 
             // groupDev
             // 
+            groupDev.Controls.Add(chkUSB);
             groupDev.Controls.Add(bDownloadLogs);
             groupDev.Controls.Add(bSetMaxBlock);
             groupDev.Controls.Add(bClearLogs);
@@ -1190,7 +1192,7 @@ namespace controller
             groupDev.Enabled = false;
             groupDev.Location = new Point(6, 926);
             groupDev.Name = "groupDev";
-            groupDev.Size = new Size(1055, 81);
+            groupDev.Size = new Size(1055, 117);
             groupDev.TabIndex = 83;
             groupDev.TabStop = false;
             groupDev.Visible = false;
@@ -1219,6 +1221,17 @@ namespace controller
             chkSave.Text = "Save Data";
             chkSave.UseVisualStyleBackColor = true;
             chkSave.CheckedChanged += chkSave_CheckedChanged;
+            // 
+            // chkUSB
+            // 
+            chkUSB.AutoSize = true;
+            chkUSB.Location = new Point(6, 87);
+            chkUSB.Name = "chkUSB";
+            chkUSB.Size = new Size(65, 24);
+            chkUSB.TabIndex = 91;
+            chkUSB.Text = "USB?";
+            chkUSB.UseVisualStyleBackColor = true;
+            chkUSB.CheckedChanged += chkUSB_CheckedChanged;
             // 
             // Form1
             // 
@@ -1395,5 +1408,6 @@ namespace controller
         private GroupBox groupDev;
         public System.Windows.Forms.Label label16;
         private CheckBox chkSave;
+        private CheckBox chkUSB;
     }
 }

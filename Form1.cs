@@ -74,7 +74,7 @@ namespace controller
         private int inMaxValue = 3; //mV
         private int outMaxValue = 4; //mV
         private int DECPeriod = (int)(1000 * 38 / 2000); // in msec, 1000 * DecValue / sampleRate        
-        private string currentDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), @"..\..\..\..\"));
+        private string currentDir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Application.ExecutablePath)!, @"..\..\..\..\"));
 
         //Location of private key for Admin mode
         private string private_key_path = @"secrets\admin_priv_d_hex.txt";
@@ -626,7 +626,8 @@ namespace controller
         }
         private void bStimOn_Click(object sender, EventArgs e)
         {
-            if(bStimOn.Text == "Stim On"){
+            if (bStimOn.Text == "Stim On")
+            {
                 bStimOn.Enabled = false;
                 Debug.WriteLine("TX Stim On");
                 labelTX.Text = "Stim On";
@@ -637,7 +638,9 @@ namespace controller
                     data = [START_MANUAL_THERAPY, 0x01, 0x01];
                 }
                 Sending(data);
-            } else {
+            }
+            else
+            {
                 bStimOn.Enabled = false;
                 Debug.WriteLine("TX Stim Off");
                 labelTX.Text = "Stim Off";
@@ -952,14 +955,14 @@ namespace controller
                         }
                         else
                         {
-                            continue;
-                            /*
+                            //continue;
+
                             try
                             {
                                 SendUSB(data);
                             }
                             catch (Exception ex) { Debug.WriteLine("Worker USB Issue: " + ex); }
-                        */
+
                         }
                     }
                 }
@@ -1174,10 +1177,13 @@ namespace controller
                             case 0x30: // Get C2 - stim
                                 txtC2.BeginInvoke((Action)(() => txtC2.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
                                 stimdata[7] = txtC2.Text;
-                                if (PMode == 9 && useVNBlock) {
+                                if (PMode == 9 && useVNBlock)
+                                {
                                     byte[] data10 = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x35];
                                     Sending(data10);
-                                } else {
+                                }
+                                else
+                                {
                                     File.WriteAllLines("stim.txt", stimdata);
                                     Debug.WriteLine("RX Get Params");
                                     labelRX.BeginInvoke((Action)(() => labelRX.Text = "Get Params"));
@@ -1198,7 +1204,7 @@ namespace controller
                                     Debug.WriteLine("RX Get Params");
                                     labelRX.BeginInvoke((Action)(() => labelRX.Text = "Get Params"));
                                 }
-                                
+
                                 break;
                             case 0x37: // Get VNB frequency
                                 Debug.WriteLine("VNB Frequency: " + (((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1).ToString());
@@ -1709,11 +1715,14 @@ namespace controller
 
             if (_selectionForm != null)
             {
-                _selectionForm.StartScanning();
-                _selectionForm.Show();
+                _selectionForm.BeginInvoke((Action)(() =>
+                {
+                    _selectionForm.StartScanning();
+                    _selectionForm.Show();
+                }));
             }
             if (!IsDisposed && IsHandleCreated)
-                this.Close();
+                this.BeginInvoke((Action)(() => this.Close()));
         }
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -1793,7 +1802,7 @@ namespace controller
                 lock (usbRxBuffer)
                 {
                     usbRxBuffer.AddRange(incoming);
-                    //Debug.WriteLine("USB Buffer: " + System.String.Join("-", usbRxBuffer));
+                    Debug.WriteLine("USB Buffer: " + System.String.Join("-", usbRxBuffer));
 
                     while (true)
                     {
@@ -2642,6 +2651,42 @@ namespace controller
                 isSaving = false;
                 label16.Enabled = false;
                 txtFname.Enabled = false;
+            }
+        }
+
+        private void chkUSB_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chkUSB.Checked)
+            {
+                useBluetooth = false;
+                if (port == null)
+                {
+                    string[] ports = SerialPort.GetPortNames();
+                    if (ports.Length > 0 && ports[0] != "")
+                    {
+                        port = new SerialPort(ports[0], 115200, Parity.None, 8, StopBits.One);
+                        port.DataReceived += OnUSBRX;
+                        port.Open();
+                        Debug.WriteLine("USB port opened: " + ports[0]);
+                    }
+                    else
+                    {
+                        Debug.WriteLine("No serial ports found — USB checkbox checked but no port available");
+                        chkUSB.Checked = false;
+                    }
+                }
+            }
+            else
+            {
+                useBluetooth = true;
+                if (port != null)
+                {
+                    port.DataReceived -= OnUSBRX;
+                    try { port.Close(); } catch { }
+                    port.Dispose();
+                    port = null;
+                    Debug.WriteLine("USB port closed");
+                }
             }
         }
     }
