@@ -319,107 +319,6 @@ namespace controller
                 }
             }
         }
-        /*
-        private void bSave_Click(object sender, EventArgs e)
-        {
-            if (!isSaving)
-            {
-                // --- START SAVING ---
-                byte EMGch = (byte)CurrentSignalMode;
-
-                // Reset buffer + filters first so sampleRate/DecValue are current before CSV header
-                if (EMGch != 5) ResetSignalState();
-
-                formsPlot1.Plot.Clear();
-                formsPlot1.Plot.Axes.SetLimitsX(0, PlotLen); //sec (PlotLen set by ResetSignalState)
-
-                bSave.Text = "Stop Saving";
-                bView.Enabled = false;
-                groupSignalMode.Enabled = false;
-                labelTX.Text = "Saving Data";
-                isSaving = true;
-
-                string dateStr = DateTime.Now.ToString("yyyy-MM-dd");
-                string timeStr = DateTime.Now.ToString("HH:mm:ss");
-
-                // ----- Build filename from the textbox -----
-                string fname = txtFname.Text.Trim();
-                if (string.IsNullOrWhiteSpace(fname))
-                {
-                    fname = "Data_" + dateStr + timeStr;
-                }
-                if (!fname.EndsWith(".csv"))
-                    fname += ".csv";
-
-                string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-                string fullPath = Path.Combine(desktop, fname);
-
-                csvWriter = new StreamWriter(fullPath, append: false);
-
-                // ----- Write file header -----
-                double effectiveFs = sampleRate / (double)DecValue;   // DECdata sampling rate
-                double df = effectiveFs / FFTsize; // frequency bin spacing
-                double fmax = effectiveFs / 2.0;
-
-                csvWriter.WriteLine($"Date,{dateStr}");
-                csvWriter.WriteLine($"Start Time,{timeStr}");
-                csvWriter.WriteLine($"Signal Type,{CurrentSignalMode.ToString()}");
-                csvWriter.WriteLine($"Sample Rate (raw),{sampleRate}");
-                csvWriter.WriteLine($"Decimation Factor,{DecValue}");
-                csvWriter.WriteLine($"Effective Fs (after DEC),{effectiveFs}");
-                csvWriter.WriteLine($"FFT size,{FFTsize}");
-                csvWriter.WriteLine($"Frequency bin spacing (Hz),{df}");
-                csvWriter.WriteLine($"FFT Max Frequency (Hz),{fmax}");
-                csvWriter.WriteLine("----------------------------------------------------");
-                csvWriter.Flush();
-
-                // ---- Send START command to device ----
-                byte[] bSampleRate = BitConverter.GetBytes(sampleRate);
-
-                if (EMGch == 5)
-                {
-                    bXLFirst = true;
-                    byte[] data = [ACC_START, 2, XLF, AddrSt[XLN]];
-                    Sending(data);
-                }
-                else
-                {
-                    byte[] data = [GET_SENSOR, 5, EMGch, bSampleRate[0], bSampleRate[1], bSampleRate[2], bSampleRate[3]];
-                    Sending(data);
-                }
-
-            }
-            else
-            {
-                // --- STOP SAVING ---
-                bSave.Text = "Start Saving";
-                bView.Enabled = true;
-                groupSignalMode.Enabled = true;
-                labelTX.Text = "Stopped Data";
-                isSaving = false;
-
-                // Stop device streaming
-                byte EMGch = (byte)CurrentSignalMode;
-                if (EMGch == 5)
-                {
-                    XLtimer.Enabled = false;
-                    byte[] data = [ACC_STOP, 1, AddrGtSp[XLN]];
-                    Sending(data);
-                }
-                else
-                {
-                    byte[] data = { GET_SENSOR, 0x01, 0x00 };
-                    Sending(data);
-                }
-
-
-                // Close CSV file
-                csvWriter?.Flush();
-                csvWriter?.Close();
-                csvWriter = null;
-            }
-        }
-        */
         private void BLEtimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             //Debug.WriteLine("BLE Timer Elapsed, bReceived=" + bReceived + ", bConnected=" + bConnected);
@@ -650,16 +549,6 @@ namespace controller
             }
         }
 
-        /*
-        private void bStimOff_Click(object sender, EventArgs e)
-        {
-            Debug.WriteLine("TX Stim Off");
-            labelTX.Text = "Stim Off";
-            labelRX.Text = "";
-            byte[] data = [STOP_MANUAL_THERAPY, 0x00];
-            Sending(data);
-        }
-        */
         private void Sending(byte[] data)
         {
             byte[] packet = data.ToArray();
@@ -1041,15 +930,6 @@ namespace controller
                             }
                             Sending(dataIni4);
 
-                            /*
-                            labelRX.BeginInvoke((Action)(() => labelRX.Text = "FW-" + System.Text.Encoding.ASCII.GetString(bResponse, 7, 6)));
-                            this.BeginInvoke((Action)(() => this.Text = this.Text + " " + labelRX.Text));
-                            Debug.WriteLine("RX " + labelRX.Text);
-                            Debug.WriteLine("TX Connected");
-                            labelTX.BeginInvoke((Action)(() => labelTX.Text = "Connected"));
-                            byte[] dataIni5 = [GET_BLEPARS, 0x00];
-                            Sending(dataIni5);
-                            */
                             break;
                         default:
                             break;
@@ -1293,7 +1173,6 @@ namespace controller
                             bSendTN.BeginInvoke((Action)(() => bSendTN.Enabled = true));
                             bSendTF.BeginInvoke((Action)(() => bSendTF.Enabled = true));
                             bStimOn.BeginInvoke((Action)(() => bStimOn.Enabled = true));
-                            //bStimOff.BeginInvoke((Action)(() => bStimOff.Enabled = false));
                             bGetC1.BeginInvoke((Action)(() => bGetC1.Enabled = true));
                             bGetC2.BeginInvoke((Action)(() => bGetC2.Enabled = true));
                             bGetPA.BeginInvoke((Action)(() => bGetPA.Enabled = true));
@@ -1303,12 +1182,10 @@ namespace controller
                             bGetTN.BeginInvoke((Action)(() => bGetTN.Enabled = true));
                             bGetTF.BeginInvoke((Action)(() => bGetTF.Enabled = true));
                             bView.BeginInvoke((Action)(() => bView.Enabled = true));
-                            //bSave.BeginInvoke((Action)(() => bSave.Enabled = true));
                             bDownloadLogs.BeginInvoke((Action)(() => bDownloadLogs.Enabled = true));
                             bClearLogs.BeginInvoke((Action)(() => bClearLogs.Enabled = true));
                             Debug.WriteLine("TX BLE Pars");
                             labelTX.BeginInvoke((Action)(() => labelTX.Text = "BLE Pars"));
-                            //byte[] dataIni4 = [GET_HPARS, 0x04, 0x48, 0x50, 0x30, 0x35]; // Get FW Version
                             byte[] dataIni5 = [GET_BLEPARS, 0x00];
                             Sending(dataIni5);
                             break;
@@ -1363,14 +1240,6 @@ namespace controller
                     Debug.WriteLine("TX FW Version");
                     labelTX.BeginInvoke((Action)(() => labelTX.Text = "FW Version"));
                     byte[] dataIni3 = [GET_HPARS, 0x04, 0x48, 0x50, 0x30, 0x35]; //Get FW Version
-                    /*
-                    Debug.WriteLine("RX No whitelist");
-                    labelRX.BeginInvoke((Action)(() => labelRX.Text = "No whitelist"));
-                    PMode = 2; // set MaxA
-                    labelTX.BeginInvoke((Action)(() => labelTX.Text = "Set MaxA"));
-                    Debug.WriteLine("TX Set MaxA");
-                    byte[] dataIni3 = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x31, 50, 0x00]; //Set MaxA = 5mA
-                    */
                     Sending(dataIni3);
                     break;
                 case MEASURE_IMPEDANCE:
@@ -2069,107 +1938,7 @@ namespace controller
             }
         }
 
-        private void ProcessECGR(double[] EMGdataP)
-        {
-            //Data processing
-            double[] DECdata = new double[10000 / DecValue]; //10,000
-            var subset = EMGdataP.Take(DecValue).ToArray();
-            double avg = subset.Average();
-
-            for (int i = 0; i < DecValue; i++)
-            { if (subset[i] > avg + inMaxValue || subset[i] < avg - inMaxValue) { subset[i] = avg; } }
-
-            DECdata[0] = subset.Average(); //0
-            subset = EMGdataP.Skip(10000 - DecValue).Take(DecValue).ToArray();
-            avg = subset.Average();
-
-            for (int i = 0; i < DecValue; i++)
-            { if (subset[i] > avg + inMaxValue || subset[i] < avg - inMaxValue) { subset[i] = avg; } }
-
-            DECdata[10000 / DecValue - 1] = subset.Average(); //last
-
-            for (int st = 1; st < 10000 / DecValue - 1; st++)
-            {
-                subset = EMGdataP.Skip(DecValue * (st - 1)).Take(DecValue * 2).ToArray();
-                avg = subset.Average();
-                for (int i = 0; i < DecValue * 2; i++)
-                { if (subset[i] > avg + inMaxValue || subset[i] < avg - inMaxValue) { subset[i] = avg; } }
-                DECdata[st] = subset.Average(); //all others
-            }
-
-            for (int st = 4; st < 10000 / DecValue - 4; st++)
-            {
-                avg = (DECdata[st - 4] + DECdata[st - 3] + DECdata[st - 2] + DECdata[st - 1] + DECdata[st + 1] + DECdata[st + 2] + DECdata[st + 3] + DECdata[st + 4]) * 0.125;
-                if (DECdata[st] > avg + outMaxValue || DECdata[st] < avg - outMaxValue)
-                { DECdata[st] = avg; } // remove spikes
-            }
-            DECdata[0] = DECdata[4]; DECdata[1] = DECdata[4]; DECdata[2] = DECdata[4]; DECdata[3] = DECdata[4];
-            DECdata[10000 / DecValue - 1] = DECdata[10000 / DecValue - 5];
-            DECdata[10000 / DecValue - 2] = DECdata[10000 / DecValue - 5];
-            DECdata[10000 / DecValue - 3] = DECdata[10000 / DecValue - 5];
-            DECdata[10000 / DecValue - 4] = DECdata[10000 / DecValue - 5];
-            avg = DECdata.Average();
-            //double square = 0;
-
-            for (int i = 0; i < 10000 / DecValue - 4; i++)
-            { DECdata[i] = DECdata[i + 4] - avg; }  //square += Math.Pow(DECdata[i], 2);
-            double tail = DECdata[10000 / DecValue - 5];
-            for (int i = 10000 / DecValue - 4; i < 10000 / DecValue; i++) { DECdata[i] = tail; }
-            formsPlot1.Plot.Clear();
-            formsPlot1.BeginInvoke((Action)(() => formsPlot1.Plot.Add.Signal(DECdata, DECPeriod))); //subset, 1
-                                                                                                    //formsPlot1.BeginInvoke((Action)(() => formsPlot1.Plot.Axes.AutoScaleY()));
-            formsPlot1.BeginInvoke((Action)(() => { formsPlot1.Plot.Axes.AutoScale(); formsPlot1.Refresh(); }));
-            subset = DECdata.Take(FFTsize + 2).ToArray();
-            Fourier.ForwardReal(subset, FFTsize);
-
-            for (int i = 0; i < FFTsize + 2; i++)
-            { subset[i] = Math.Abs(subset[i]); }
-            Debug.WriteLine("RX Getting Data");
-            labelRX.BeginInvoke((Action)(() => labelRX.Text = "Getting Data"));
-            int maxIndex = subset.ToList().IndexOf(subset.Max()); // 0.1 * 0.01 * FFTsize * DECPeriod *
-
-            if (maxIndex < 100)
-            { labelV.BeginInvoke((Action)(() => labelV.Text = (maxIndex * 0.1).ToString("F1"))); }
-            //labelV.BeginInvoke((Action)(() => labelV.Text = ((int)Math.Sqrt(square*DecValue/10000)).ToString())));
-
-            //Save data to CSV
-            if (isSaving && csvWriter != null)
-            {
-                long ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-                StringBuilder sb = new StringBuilder(400000); // preallocate for speed
-
-                //Raw data
-                sb.Append(ts);
-                for (int i = 0; i < bufferRaw.Length; i++)
-                    sb.Append($",{bufferRaw[i]}");
-                sb.AppendLine();
-
-                //Processed data
-                sb.Append(ts);
-                int decLen = DECdata.Length;
-                for (int i = 0; i < decLen; i++)
-                    sb.Append($"," + DECdata[i].ToString("F6"));
-                sb.AppendLine();
-
-                //FFTs
-                int fftLen = FFTsize + 2;
-
-                sb.Append(ts);
-                for (int i = 0; i < fftLen; i++)
-                    sb.Append($"," + subset[i].ToString("F6"));
-                sb.AppendLine();
-
-                lock (csvLock)
-                {
-                    csvWriter.Write(sb.ToString());
-                    csvWriter.Flush();
-                }
-            }
-        }
-
         // -------- Rolling display helpers --------
-
         private double[] LinearizeRingBuffer()
         {
             int count = _rollCount;
