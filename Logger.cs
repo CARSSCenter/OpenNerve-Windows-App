@@ -1,40 +1,102 @@
 using System.Diagnostics;
 
-namespace controller
+namespace controller;
+
+internal static class Logger
 {
-    internal static class Logger
+    public static bool EnableLogging = true;
+
+    private static StreamWriter? _writer;
+    private static TimestampedFileListener? _fileListener;
+
+    public static string LogDirectory { get; private set; } =
+        AppDomain.CurrentDomain.BaseDirectory;
+
+    public static string? LogFileName { get; private set; }
+
+    public static string? CurrentLogPath { get; private set; }
+
+    public static void Configure(string? directory, string? fileName)
     {
-        public static bool EnableLogging = true;   // set to false to disable log file output
-
-        private static StreamWriter? _writer;
-
-        public static void Initialize()
+        if (!string.IsNullOrWhiteSpace(directory))
         {
-            if (!EnableLogging) return;
-
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            string filename = $"ONrecorderLog_{timestamp}.txt";
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
-
-            _writer = new StreamWriter(path, append: false) { AutoFlush = true };
-            Trace.Listeners.Add(new TimestampedFileListener(_writer));
+            LogDirectory = directory.Trim();
         }
 
-        public static void Close() => _writer?.Close();
+        LogFileName = string.IsNullOrWhiteSpace(fileName) ? null : fileName.Trim();
     }
 
-    internal class TimestampedFileListener : TraceListener
+    public static void Initialize()
     {
-        private readonly StreamWriter _writer;
-
-        public TimestampedFileListener(StreamWriter writer) => _writer = writer;
-
-        public override void Write(string? message) { }   // required override, unused
-
-        public override void WriteLine(string? message)
+        if (!EnableLogging || _writer != null)
         {
-            if (!Logger.EnableLogging) return;
-            _writer.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss.ffff} - {message}");
+            return;
         }
+
+        var path = ResolveLogPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        _writer = new StreamWriter(path, append: false) { AutoFlush = true };
+        _fileListener = new TimestampedFileListener(_writer);
+        Trace.Listeners.Add(_fileListener);
+        CurrentLogPath = path;
+    }
+
+    public static void Reinitialize()
+    {
+        Close();
+        if (EnableLogging)
+        {
+            Initialize();
+        }
+    }
+
+    public static void Close()
+    {
+        if (_fileListener != null)
+        {
+            Trace.Listeners.Remove(_fileListener);
+            _fileListener = null;
+        }
+
+        _writer?.Close();
+        _writer = null;
+        CurrentLogPath = null;
+    }
+
+    private static string ResolveLogPath()
+    {
+        var fileName = LogFileName;
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileName = $"OpenNerve_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.txt";
+        }
+        else if (!fileName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+        {
+            fileName += ".txt";
+        }
+
+        return Path.Combine(LogDirectory, fileName);
+    }
+}
+
+internal class TimestampedFileListener : TraceListener
+{
+    private readonly StreamWriter _writer;
+
+    public TimestampedFileListener(StreamWriter writer) => _writer = writer;
+
+    public override void Write(string? message)
+    {
+    }
+
+    public override void WriteLine(string? message)
+    {
+        if (!Logger.EnableLogging)
+        {
+            return;
+        }
+
+        _writer.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss.ffff} - {message}");
     }
 }

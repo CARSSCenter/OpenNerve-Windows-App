@@ -1595,6 +1595,8 @@ namespace controller
         }
         private void Form1_Load(object sender, EventArgs e)
         {
+            txtLogPath.Text = Logger.LogDirectory;
+            txtLogFile.Text = Logger.LogFileName ?? string.Empty;
             Directory.SetCurrentDirectory(currentDir);
             formsPlot1.Plot.Axes.SetLimitsX(0, (int)((10000 / DecValue - 9) * DECPeriod)); //msec
             //formsPlot1.Plot.Axes.SetLimitsX(0, FFTsize); //Hz
@@ -2400,6 +2402,51 @@ namespace controller
                 groupDev.Enabled = false;
                 groupDev.Visible = false;
             }
+        }
+
+        private void btnBrowseLogPath_Click(object sender, EventArgs e)
+        {
+            using var dialog = new FolderBrowserDialog
+            {
+                Description = "Select folder for debug log files",
+                SelectedPath = string.IsNullOrWhiteSpace(txtLogPath.Text)
+                    ? AppDomain.CurrentDomain.BaseDirectory
+                    : txtLogPath.Text.Trim(),
+            };
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                txtLogPath.Text = dialog.SelectedPath;
+            }
+        }
+
+        private void btnApplyLogSettings_Click(object sender, EventArgs e)
+        {
+            var directory = txtLogPath.Text.Trim();
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                directory = AppDomain.CurrentDomain.BaseDirectory;
+                txtLogPath.Text = directory;
+            }
+
+            if (!Directory.Exists(directory))
+            {
+                labelRX.Text = "Log folder does not exist.";
+                return;
+            }
+
+            var fileName = txtLogFile.Text.Trim();
+            if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                labelRX.Text = "Log file name contains invalid characters.";
+                return;
+            }
+
+            Logger.Configure(directory, string.IsNullOrWhiteSpace(fileName) ? null : fileName);
+            Logger.Reinitialize();
+            labelRX.Text = Logger.CurrentLogPath == null
+                ? "File logging is disabled."
+                : $"Logging to {Logger.CurrentLogPath}";
         }
 
         private void labelV_Click(object sender, EventArgs e)
