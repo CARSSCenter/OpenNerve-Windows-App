@@ -103,6 +103,7 @@ namespace controller
             bZmin = new Button();
             ckVNB = new CheckBox();
             chkDev = new CheckBox();
+            chkFileLogging = new CheckBox();
             groupDev = new GroupBox();
             label16 = new System.Windows.Forms.Label();
             chkSave = new CheckBox();
@@ -1178,8 +1179,20 @@ namespace controller
             chkDev.UseVisualStyleBackColor = true;
             chkDev.CheckedChanged += chkDev_CheckedChanged;
             // 
+            // chkFileLogging
+            // 
+            chkFileLogging.AutoSize = true;
+            chkFileLogging.Location = new Point(6, 26);
+            chkFileLogging.Name = "chkFileLogging";
+            chkFileLogging.Size = new Size(163, 24);
+            chkFileLogging.TabIndex = 92;
+            chkFileLogging.Text = "Enable file logging";
+            chkFileLogging.UseVisualStyleBackColor = true;
+            chkFileLogging.CheckedChanged += chkFileLogging_CheckedChanged;
+            // 
             // groupDev
             // 
+            groupDev.Controls.Add(chkFileLogging);
             groupDev.Controls.Add(chkUSB);
             groupDev.Controls.Add(bDownloadLogs);
             groupDev.Controls.Add(bSetMaxBlock);
@@ -1409,5 +1422,6 @@ namespace controller
         public System.Windows.Forms.Label label16;
         private CheckBox chkSave;
         private CheckBox chkUSB;
+        private CheckBox chkFileLogging;
     }
 }

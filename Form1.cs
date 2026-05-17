@@ -2402,6 +2402,11 @@ namespace controller
             }
         }
 
+        private void chkFileLogging_CheckedChanged(object sender, EventArgs e)
+        {
+            Logger.SetFileLoggingEnabled(chkFileLogging.Checked);
+        }
+
         private void labelV_Click(object sender, EventArgs e)
         {
 
