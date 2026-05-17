@@ -51,11 +51,19 @@ namespace controller
             bGetC1 = new Button();
             bSendC1 = new Button();
             label8 = new System.Windows.Forms.Label();
-            txtC1 = new TextBox();
+            groupCathode = new GroupBox();
+            rbC1Ch1 = new RadioButton();
+            rbC1Ch2 = new RadioButton();
+            rbC1Ch3 = new RadioButton();
+            rbC1Ch4 = new RadioButton();
             bGetC2 = new Button();
             bSendC2 = new Button();
             label9 = new System.Windows.Forms.Label();
-            txtC2 = new TextBox();
+            groupAnode = new GroupBox();
+            rbC2Ch1 = new RadioButton();
+            rbC2Ch2 = new RadioButton();
+            rbC2Ch3 = new RadioButton();
+            rbC2Ch4 = new RadioButton();
             formsPlot1 = new ScottPlot.WinForms.FormsPlot();
             rbEMG2 = new RadioButton();
             rbEMG1 = new RadioButton();
@@ -107,6 +115,8 @@ namespace controller
             label16 = new System.Windows.Forms.Label();
             chkSave = new CheckBox();
             chkUSB = new CheckBox();
+            groupCathode.SuspendLayout();
+            groupAnode.SuspendLayout();
             groupSignalMode.SuspendLayout();
             groupSineWave.SuspendLayout();
             groupDev.SuspendLayout();
@@ -535,15 +545,58 @@ namespace controller
             label8.Text = "Cathode, Ch1-4";
             label8.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // txtC1
+            // groupCathode
             // 
-            txtC1.Font = new Font("Times New Roman", 12F);
-            txtC1.Location = new Point(18, 266);
-            txtC1.Margin = new Padding(4, 5, 4, 5);
-            txtC1.Name = "txtC1";
-            txtC1.Size = new Size(72, 30);
-            txtC1.TabIndex = 49;
-            txtC1.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            groupCathode.Controls.Add(rbC1Ch4);
+            groupCathode.Controls.Add(rbC1Ch3);
+            groupCathode.Controls.Add(rbC1Ch2);
+            groupCathode.Controls.Add(rbC1Ch1);
+            groupCathode.Font = new Font("Times New Roman", 10F);
+            groupCathode.Location = new Point(18, 266);
+            groupCathode.Name = "groupCathode";
+            groupCathode.Size = new Size(200, 40);
+            groupCathode.TabIndex = 49;
+            groupCathode.TabStop = false;
+            // 
+            // rbC1Ch1
+            // 
+            rbC1Ch1.AutoSize = true;
+            rbC1Ch1.Location = new Point(8, 12);
+            rbC1Ch1.Name = "rbC1Ch1";
+            rbC1Ch1.Size = new Size(38, 23);
+            rbC1Ch1.TabIndex = 0;
+            rbC1Ch1.Text = "1";
+            rbC1Ch1.UseVisualStyleBackColor = true;
+            // 
+            // rbC1Ch2
+            // 
+            rbC1Ch2.AutoSize = true;
+            rbC1Ch2.Location = new Point(52, 12);
+            rbC1Ch2.Name = "rbC1Ch2";
+            rbC1Ch2.Size = new Size(38, 23);
+            rbC1Ch2.TabIndex = 1;
+            rbC1Ch2.Text = "2";
+            rbC1Ch2.UseVisualStyleBackColor = true;
+            // 
+            // rbC1Ch3
+            // 
+            rbC1Ch3.AutoSize = true;
+            rbC1Ch3.Location = new Point(96, 12);
+            rbC1Ch3.Name = "rbC1Ch3";
+            rbC1Ch3.Size = new Size(38, 23);
+            rbC1Ch3.TabIndex = 2;
+            rbC1Ch3.Text = "3";
+            rbC1Ch3.UseVisualStyleBackColor = true;
+            // 
+            // rbC1Ch4
+            // 
+            rbC1Ch4.AutoSize = true;
+            rbC1Ch4.Location = new Point(140, 12);
+            rbC1Ch4.Name = "rbC1Ch4";
+            rbC1Ch4.Size = new Size(38, 23);
+            rbC1Ch4.TabIndex = 3;
+            rbC1Ch4.Text = "4";
+            rbC1Ch4.UseVisualStyleBackColor = true;
             // 
             // bGetC2
             // 
@@ -584,15 +637,58 @@ namespace controller
             label9.Text = "Anode, Ch1-4";
             label9.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // txtC2
+            // groupAnode
             // 
-            txtC2.Font = new Font("Times New Roman", 12F);
-            txtC2.Location = new Point(18, 337);
-            txtC2.Margin = new Padding(4, 5, 4, 5);
-            txtC2.Name = "txtC2";
-            txtC2.Size = new Size(72, 30);
-            txtC2.TabIndex = 53;
-            txtC2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            groupAnode.Controls.Add(rbC2Ch4);
+            groupAnode.Controls.Add(rbC2Ch3);
+            groupAnode.Controls.Add(rbC2Ch2);
+            groupAnode.Controls.Add(rbC2Ch1);
+            groupAnode.Font = new Font("Times New Roman", 10F);
+            groupAnode.Location = new Point(18, 337);
+            groupAnode.Name = "groupAnode";
+            groupAnode.Size = new Size(200, 40);
+            groupAnode.TabIndex = 53;
+            groupAnode.TabStop = false;
+            // 
+            // rbC2Ch1
+            // 
+            rbC2Ch1.AutoSize = true;
+            rbC2Ch1.Location = new Point(8, 12);
+            rbC2Ch1.Name = "rbC2Ch1";
+            rbC2Ch1.Size = new Size(38, 23);
+            rbC2Ch1.TabIndex = 0;
+            rbC2Ch1.Text = "1";
+            rbC2Ch1.UseVisualStyleBackColor = true;
+            // 
+            // rbC2Ch2
+            // 
+            rbC2Ch2.AutoSize = true;
+            rbC2Ch2.Location = new Point(52, 12);
+            rbC2Ch2.Name = "rbC2Ch2";
+            rbC2Ch2.Size = new Size(38, 23);
+            rbC2Ch2.TabIndex = 1;
+            rbC2Ch2.Text = "2";
+            rbC2Ch2.UseVisualStyleBackColor = true;
+            // 
+            // rbC2Ch3
+            // 
+            rbC2Ch3.AutoSize = true;
+            rbC2Ch3.Location = new Point(96, 12);
+            rbC2Ch3.Name = "rbC2Ch3";
+            rbC2Ch3.Size = new Size(38, 23);
+            rbC2Ch3.TabIndex = 2;
+            rbC2Ch3.Text = "3";
+            rbC2Ch3.UseVisualStyleBackColor = true;
+            // 
+            // rbC2Ch4
+            // 
+            rbC2Ch4.AutoSize = true;
+            rbC2Ch4.Location = new Point(140, 12);
+            rbC2Ch4.Name = "rbC2Ch4";
+            rbC2Ch4.Size = new Size(38, 23);
+            rbC2Ch4.TabIndex = 3;
+            rbC2Ch4.Text = "4";
+            rbC2Ch4.UseVisualStyleBackColor = true;
             // 
             // formsPlot1
             // 
@@ -1262,11 +1358,11 @@ namespace controller
             Controls.Add(bGetC2);
             Controls.Add(bSendC2);
             Controls.Add(label9);
-            Controls.Add(txtC2);
+            Controls.Add(groupAnode);
             Controls.Add(bGetC1);
             Controls.Add(bSendC1);
             Controls.Add(label8);
-            Controls.Add(txtC1);
+            Controls.Add(groupCathode);
             Controls.Add(bGetTF);
             Controls.Add(bGetTN);
             Controls.Add(bGetPR);
@@ -1308,6 +1404,10 @@ namespace controller
             StartPosition = FormStartPosition.CenterScreen;
             Text = "OpenNerve Controller";
             Load += Form1_Load;
+            groupCathode.ResumeLayout(false);
+            groupCathode.PerformLayout();
+            groupAnode.ResumeLayout(false);
+            groupAnode.PerformLayout();
             groupSignalMode.ResumeLayout(false);
             groupSignalMode.PerformLayout();
             groupSineWave.ResumeLayout(false);
@@ -1352,11 +1452,19 @@ namespace controller
         public Button bGetC1;
         public Button bSendC1;
         public System.Windows.Forms.Label label8;
-        public TextBox txtC1;
+        private GroupBox groupCathode;
+        private RadioButton rbC1Ch1;
+        private RadioButton rbC1Ch2;
+        private RadioButton rbC1Ch3;
+        private RadioButton rbC1Ch4;
         public Button bGetC2;
         public Button bSendC2;
         public System.Windows.Forms.Label label9;
-        public TextBox txtC2;
+        private GroupBox groupAnode;
+        private RadioButton rbC2Ch1;
+        private RadioButton rbC2Ch2;
+        private RadioButton rbC2Ch3;
+        private RadioButton rbC2Ch4;
         public ScottPlot.WinForms.FormsPlot formsPlot1;
         public Switch mySwitch;
         private RadioButton rbEMG2;

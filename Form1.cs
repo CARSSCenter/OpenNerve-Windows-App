@@ -360,14 +360,83 @@ namespace controller
             byte[] eraseCmd = [ERASE_IPG_LOG, 0x00];
             Sending(eraseCmd);
         }
+        private static bool TryGetStimChannel(
+            RadioButton ch1,
+            RadioButton ch2,
+            RadioButton ch3,
+            RadioButton ch4,
+            out byte channel)
+        {
+            if (ch1.Checked)
+            {
+                channel = 1;
+                return true;
+            }
+
+            if (ch2.Checked)
+            {
+                channel = 2;
+                return true;
+            }
+
+            if (ch3.Checked)
+            {
+                channel = 3;
+                return true;
+            }
+
+            if (ch4.Checked)
+            {
+                channel = 4;
+                return true;
+            }
+
+            channel = 0;
+            return false;
+        }
+
+        private static void SetStimChannel(
+            RadioButton ch1,
+            RadioButton ch2,
+            RadioButton ch3,
+            RadioButton ch4,
+            int channel)
+        {
+            ch1.Checked = channel == 1;
+            ch2.Checked = channel == 2;
+            ch3.Checked = channel == 3;
+            ch4.Checked = channel == 4;
+        }
+
+        private static void ClearStimChannel(
+            RadioButton ch1,
+            RadioButton ch2,
+            RadioButton ch3,
+            RadioButton ch4)
+        {
+            ch1.Checked = false;
+            ch2.Checked = false;
+            ch3.Checked = false;
+            ch4.Checked = false;
+        }
+
+        private static string GetStimChannelText(
+            RadioButton ch1,
+            RadioButton ch2,
+            RadioButton ch3,
+            RadioButton ch4) =>
+            TryGetStimChannel(ch1, ch2, ch3, ch4, out var channel)
+                ? channel.ToString()
+                : string.Empty;
+
         private void bGet_Click(object sender, EventArgs e)
         {
             byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x30, 0x32]; // Get PA
             Debug.WriteLine("TX Get Params");
             labelTX.Text = "Get Params";
             labelRX.Text = "";
-            txtC1.Text = "";
-            txtC2.Text = "";
+            ClearStimChannel(rbC1Ch1, rbC1Ch2, rbC1Ch3, rbC1Ch4);
+            ClearStimChannel(rbC2Ch1, rbC2Ch2, rbC2Ch3, rbC2Ch4);
             txtPA.Text = "";
             txtPW.Text = "";
             txtPF.Text = "";
@@ -379,7 +448,11 @@ namespace controller
         }
         private void bSendC1_Click(object sender, EventArgs e)
         {
-            byte st = (byte)Int16.Parse(txtC1.Text);
+            if (!TryGetStimChannel(rbC1Ch1, rbC1Ch2, rbC1Ch3, rbC1Ch4, out byte st))
+            {
+                MessageBox.Show("Select a cathode channel (1–4).", "Channel", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x30, 0x39, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -387,7 +460,11 @@ namespace controller
         }
         private void bSendC2_Click(object sender, EventArgs e)
         {
-            byte st = (byte)Int16.Parse(txtC2.Text);
+            if (!TryGetStimChannel(rbC2Ch1, rbC2Ch2, rbC2Ch3, rbC2Ch4, out byte st))
+            {
+                MessageBox.Show("Select an anode channel (1–4).", "Channel", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x30, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -449,7 +526,7 @@ namespace controller
             Debug.WriteLine("TX Get Params");
             labelTX.Text = "Get Params";
             labelRX.Text = "";
-            txtC1.Text = "";
+            ClearStimChannel(rbC1Ch1, rbC1Ch2, rbC1Ch3, rbC1Ch4);
             PMode = 0;
             Sending(data);
         }
@@ -459,7 +536,7 @@ namespace controller
             Debug.WriteLine("TX Get Params");
             labelTX.Text = "Get Params";
             labelRX.Text = "";
-            txtC2.Text = "";
+            ClearStimChannel(rbC2Ch1, rbC2Ch2, rbC2Ch3, rbC2Ch4);
             PMode = 0;
             Sending(data);
         }
@@ -1032,8 +1109,14 @@ namespace controller
                                 }
                                 break;
                             case 0x39: // Get C1
-                                txtC1.BeginInvoke((Action)(() => txtC1.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
-                                stimdata[6] = txtC1.Text;
+                                {
+                                    var channel = (int)bResponse[8] * 256 + (int)bResponse[7];
+                                    rbC1Ch1.BeginInvoke((Action)(() =>
+                                    {
+                                        SetStimChannel(rbC1Ch1, rbC1Ch2, rbC1Ch3, rbC1Ch4, channel);
+                                        stimdata[6] = GetStimChannelText(rbC1Ch1, rbC1Ch2, rbC1Ch3, rbC1Ch4);
+                                    }));
+                                }
                                 if (PMode == 9)
                                 {
                                     byte[] data10 = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x30];
@@ -1055,8 +1138,14 @@ namespace controller
                         switch (bResponse[6])
                         {
                             case 0x30: // Get C2 - stim
-                                txtC2.BeginInvoke((Action)(() => txtC2.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
-                                stimdata[7] = txtC2.Text;
+                                {
+                                    var channel = (int)bResponse[8] * 256 + (int)bResponse[7];
+                                    rbC2Ch1.BeginInvoke((Action)(() =>
+                                    {
+                                        SetStimChannel(rbC2Ch1, rbC2Ch2, rbC2Ch3, rbC2Ch4, channel);
+                                        stimdata[7] = GetStimChannelText(rbC2Ch1, rbC2Ch2, rbC2Ch3, rbC2Ch4);
+                                    }));
+                                }
                                 if (PMode == 9 && useVNBlock)
                                 {
                                     byte[] data10 = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x35];
@@ -2271,11 +2360,11 @@ namespace controller
             {
                 useVNBlock = true;
                 groupSineWave.Enabled = true;
-                txtC1.Enabled = false;
+                groupCathode.Enabled = false;
                 bSendC1.Enabled = false;
                 bGetC1.Enabled = false;
                 label8.Enabled = false;
-                txtC2.Enabled = false;
+                groupAnode.Enabled = false;
                 bSendC2.Enabled = false;
                 bGetC2.Enabled = false;
                 label9.Enabled = false;
@@ -2284,11 +2373,11 @@ namespace controller
             {
                 useVNBlock = false;
                 groupSineWave.Enabled = false;
-                txtC1.Enabled = true;
+                groupCathode.Enabled = true;
                 bSendC1.Enabled = true;
                 bGetC1.Enabled = true;
                 label8.Enabled = true;
-                txtC2.Enabled = true;
+                groupAnode.Enabled = true;
                 bSendC2.Enabled = true;
                 bGetC2.Enabled = true;
                 label9.Enabled = true;
