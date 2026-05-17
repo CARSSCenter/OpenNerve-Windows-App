@@ -35,6 +35,7 @@ namespace controller
     {
         private DeviceSelectionForm? _selectionForm;
         private bool _disconnecting = false;
+        private UiDebugTraceListener? _debugUiListener;
 
         private Form1() { InitializeComponent(); } // designer only
 
@@ -1595,6 +1596,10 @@ namespace controller
         }
         private void Form1_Load(object sender, EventArgs e)
         {
+            _debugUiListener = new UiDebugTraceListener(txtDebugMessages);
+            Debug.Listeners.Add(_debugUiListener);
+            Trace.Listeners.Add(_debugUiListener);
+
             Directory.SetCurrentDirectory(currentDir);
             formsPlot1.Plot.Axes.SetLimitsX(0, (int)((10000 / DecValue - 9) * DECPeriod)); //msec
             //formsPlot1.Plot.Axes.SetLimitsX(0, FFTsize); //Hz
@@ -1630,6 +1635,13 @@ namespace controller
         }
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            if (_debugUiListener != null)
+            {
+                Debug.Listeners.Remove(_debugUiListener);
+                Trace.Listeners.Remove(_debugUiListener);
+                _debugUiListener = null;
+            }
+
             Debug.WriteLine("Closing Form");
             if (BLEDevice != null && AutoLogEnabled)
             {
