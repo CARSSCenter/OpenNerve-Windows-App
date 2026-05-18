@@ -360,6 +360,12 @@ namespace controller
             byte[] eraseCmd = [ERASE_IPG_LOG, 0x00];
             Sending(eraseCmd);
         }
+        private void ReportParameterError(TextBox input, string message)
+        {
+            StimInputValidation.MarkInvalid(input);
+            labelRX.Text = message;
+        }
+
         private void bGet_Click(object sender, EventArgs e)
         {
             byte[] data = [GET_SPARS, 0x04, 0x53, 0x50, 0x30, 0x32]; // Get PA
@@ -379,7 +385,12 @@ namespace controller
         }
         private void bSendC1_Click(object sender, EventArgs e)
         {
-            byte st = (byte)Int16.Parse(txtC1.Text);
+            if (!StimInputValidation.TryParseInt(txtC1, "Cathode", 1, 4, out var cathodeChannel, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)cathodeChannel;
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x30, 0x39, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -387,7 +398,12 @@ namespace controller
         }
         private void bSendC2_Click(object sender, EventArgs e)
         {
-            byte st = (byte)Int16.Parse(txtC2.Text);
+            if (!StimInputValidation.TryParseInt(txtC2, "Anode", 1, 4, out var anodeChannel, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)anodeChannel;
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x30, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -395,7 +411,12 @@ namespace controller
         }
         private void bSendPA_Click(object sender, EventArgs e)
         {
-            byte st = (byte)(Convert.ToDecimal(txtPA.Text) * 10);
+            if (!StimInputValidation.TryParseDecimal(txtPA, "Amplitude", 0m, 5m, out var amplitude, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)(amplitude * 10);
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x30, 0x32, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -403,7 +424,12 @@ namespace controller
         }
         private void bSendPW_Click(object sender, EventArgs e)
         {
-            byte st = (byte)(Int16.Parse(txtPW.Text) / 50);
+            if (!StimInputValidation.TryParseInt(txtPW, "Pulse width", 100, 1000, out var pulseWidth, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)(pulseWidth / 50);
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x30, 0x33, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -411,8 +437,13 @@ namespace controller
         }
         private void bSendPF_Click(object sender, EventArgs e)
         {
-            byte st1 = (byte)(Int16.Parse(txtPF.Text) % 256);
-            byte st2 = (byte)(Int16.Parse(txtPF.Text) / 256);
+            if (!StimInputValidation.TryParseInt(txtPF, "Frequency", 1, 1200, out var frequency, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st1 = (byte)(frequency % 256);
+            byte st2 = (byte)(frequency / 256);
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x30, 0x34, st1, st2];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -420,8 +451,13 @@ namespace controller
         }
         private void bSendPR_Click(object sender, EventArgs e)
         {
+            if (!StimInputValidation.TryParseInt(txtPR, "Ramp", 1, 10, out var ramp, ReportParameterError))
+            {
+                return;
+            }
+
             PMode = 1; //+ RampUp = st
-            byte st = (byte)Int16.Parse(txtPR.Text);
+            byte st = (byte)ramp;
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x30, 0x35, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -429,7 +465,12 @@ namespace controller
         }
         private void bSendTN_Click(object sender, EventArgs e)
         {
-            byte st = (byte)(Int16.Parse(txtTN.Text) / 10);
+            if (!StimInputValidation.TryParseInt(txtTN, "Train on", 10, 300, out var trainOn, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)(trainOn / 10);
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x30, 0x37, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -437,7 +478,12 @@ namespace controller
         }
         private void bSendTF_Click(object sender, EventArgs e)
         {
-            byte st = (byte)(Int16.Parse(txtTF.Text) / 10);
+            if (!StimInputValidation.TryParseInt(txtTF, "Train off", 0, 300, out var trainOff, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)(trainOff / 10);
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x30, 0x38, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -1154,7 +1200,12 @@ namespace controller
                             break;
                         case 1: // set RampDown
                             PMode = 0;
-                            byte st = (byte)Int16.Parse(txtPR.Text);
+                            if (!StimInputValidation.TryParseInt(txtPR, "Ramp", 1, 10, out var rampDown, ReportParameterError))
+                            {
+                                break;
+                            }
+
+                            byte st = (byte)rampDown;
                             byte[] data12 = [SET_SPARS, 0x06, 0x53, 0x50, 0x30, 0x36, st, 0x00];
                             Sending(data12);
                             break;
@@ -2173,7 +2224,12 @@ namespace controller
 
         private void bSendV1_Click(object sender, EventArgs e)  //Nerve block cathod
         {
-            byte st = (byte)Int16.Parse(txtV1.Text);
+            if (!StimInputValidation.TryParseInt(txtV1, "Cathode", 1, 4, out var cathode, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)cathode;
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x31, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -2182,7 +2238,12 @@ namespace controller
 
         private void bSendV2_Click(object sender, EventArgs e)
         {
-            byte st = (byte)Int16.Parse(txtV2.Text);
+            if (!StimInputValidation.TryParseInt(txtV2, "Anode", 2, 5, out var anode, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)anode;
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x32, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -2191,7 +2252,12 @@ namespace controller
 
         private void bSendVamp_Click(object sender, EventArgs e)
         {
-            byte st = (byte)(Convert.ToDecimal(txtVAmp.Text) * 10);
+            if (!StimInputValidation.TryParseDecimal(txtVAmp, "Sine amplitude", 0m, 4m, out var sineAmp, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)(sineAmp * 10);
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x35, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -2200,7 +2266,12 @@ namespace controller
 
         private void bSendVfreq_Click(object sender, EventArgs e)
         {
-            int sineFreq = Int16.Parse(txtVfreq.Text) * 10;
+            if (!StimInputValidation.TryParseInt(txtVfreq, "Sine frequency", 1, 15, out var sineHz, ReportParameterError))
+            {
+                return;
+            }
+
+            int sineFreq = sineHz * 10;
             byte st1 = (byte)(sineFreq % 256);
             byte st2 = (byte)(sineFreq / 256);
             //byte[] data = [SET_SPARS, 0x06, 0x53, 0x54, 0x33, 0x31, st1, st2];
@@ -2212,7 +2283,12 @@ namespace controller
 
         private void bSendVon_Click(object sender, EventArgs e)
         {
-            byte st = (byte)(Int16.Parse(txtVon.Text));
+            if (!StimInputValidation.TryParseInt(txtVon, "On time", 10, 300, out var onTime, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)onTime;
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x38, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -2221,7 +2297,12 @@ namespace controller
 
         private void bSendVoff_Click(object sender, EventArgs e)
         {
-            byte st = (byte)(Int16.Parse(txtVoff.Text));
+            if (!StimInputValidation.TryParseInt(txtVoff, "Off time", 0, 300, out var offTime, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)offTime;
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x39, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
@@ -2258,7 +2339,12 @@ namespace controller
 
         private void bSetMaxBlock_Click(object sender, EventArgs e)
         {
-            byte st = (byte)(Convert.ToDecimal(txtMaxVNB.Text));
+            if (!StimInputValidation.TryParseInt(txtMaxVNB, "Max VNB", 0, 255, out var maxVnb, ReportParameterError))
+            {
+                return;
+            }
+
+            byte st = (byte)maxVnb;
             byte[] data = [SET_SPARS, 0x06, 0x53, 0x50, 0x31, 0x36, st, 0x00];
             labelTX.Text = "Set Params";
             labelRX.Text = "";
