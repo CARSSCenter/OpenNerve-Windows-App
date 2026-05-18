@@ -177,6 +177,7 @@ namespace controller
         private bool _logEraseInProgress = false;
         private bool _pendingDisconnect = false;
         private readonly List<string> _ipgLogEntries = new();
+        private readonly Dictionary<Control, bool> _savedControlEnabled = new();
 
         //For single write queue refactor
         private readonly Channel<byte[]> _txChannel =
@@ -597,6 +598,16 @@ namespace controller
 
         private void Sending(byte[] data)
         {
+            if (_logDownloadInProgress && data.Length > 0)
+            {
+                var op = data[0];
+                if (op != READ_IPG_LOG && op != ERASE_IPG_LOG)
+                {
+                    Debug.WriteLine($"Blocked IPG command 0x{op:X2} during log download.");
+                    return;
+                }
+            }
+
             byte[] packet = data.ToArray();
             int dataLength = packet.Length;
             const ushort polynomial = 0x1021; // CRC-16/CCITT-FALSE polynomial
@@ -1317,11 +1328,17 @@ namespace controller
                     int ipgPayloadLen = bResponse[1];
                     if (ipgPayloadLen <= 1) // empty or just status byte = no more entries
                     {
+                        var downloadedCount = _ipgLogEntries.Count;
                         _logDownloadInProgress = false;
-                        Debug.WriteLine($"--- IPG Log Download Complete ({_ipgLogEntries.Count} entries) ---");
+                        labelTX.BeginInvoke((Action)(() => labelTX.Text = "Log download"));
+                        Debug.WriteLine($"--- IPG Log Download Complete ({downloadedCount} entries) ---");
                         _ipgLogEntries.Clear();
                         if (_eraseAfterDownload)
                         {
+                            labelRX.BeginInvoke((Action)(() =>
+                                labelRX.Text = downloadedCount == 0
+                                    ? "Download complete. Erasing device log..."
+                                    : $"Downloaded {downloadedCount} entries. Erasing device log..."));
                             // Erase device log now that we have a local copy
                             _logEraseInProgress = true;
                             Debug.WriteLine("--- IPG Log Erase Sent ---");
@@ -1329,10 +1346,18 @@ namespace controller
                             Sending(eraseCmd);
                             // _pendingDisconnect is handled in ERASE_IPG_LOG case
                         }
-                        else if (_pendingDisconnect)
+                        else
                         {
-                            _pendingDisconnect = false;
-                            DoDisconnect();
+                            SetIpgCommunicationLocked(false);
+                            var completeMessage = downloadedCount == 0
+                                ? "Log download complete (no entries)."
+                                : $"Log download complete ({downloadedCount} entries).";
+                            labelRX.BeginInvoke((Action)(() => labelRX.Text = completeMessage));
+                            if (_pendingDisconnect)
+                            {
+                                _pendingDisconnect = false;
+                                DoDisconnect();
+                            }
                         }
                     }
                     else
@@ -1341,6 +1366,7 @@ namespace controller
                         string ipgEntry = Encoding.ASCII.GetString(bResponse, 3, ipgPayloadLen - 1);
                         Debug.WriteLine("[IPG] " + ipgEntry.TrimEnd('\r', '\n')); // print immediately
                         _ipgLogEntries.Add(ipgEntry);
+                        UpdateLogDownloadProgress();
                         byte[] nextReq = new byte[9];
                         nextReq[0] = READ_IPG_LOG;
                         nextReq[1] = 0x07;
@@ -1350,6 +1376,8 @@ namespace controller
                     break;
                 case ERASE_IPG_LOG:
                     _logEraseInProgress = false;
+                    SetIpgCommunicationLocked(false);
+                    labelRX.BeginInvoke((Action)(() => labelRX.Text = "Log erase complete."));
                     Debug.WriteLine("--- IPG Log Erase Complete ---");
                     if (_pendingDisconnect)
                     {
@@ -1871,12 +1899,115 @@ namespace controller
 
         private bool _eraseAfterDownload = false;
 
+        private IEnumerable<Control> GetIpgCommunicationControls()
+        {
+            yield return bGet;
+            yield return bSendPA;
+            yield return bGetPA;
+            yield return bSendPW;
+            yield return bGetPW;
+            yield return bSendPF;
+            yield return bGetPF;
+            yield return bSendPR;
+            yield return bGetPR;
+            yield return bSendTN;
+            yield return bGetTN;
+            yield return bSendTF;
+            yield return bGetTF;
+            yield return bSendC1;
+            yield return bGetC1;
+            yield return bSendC2;
+            yield return bGetC2;
+            yield return bStimOn;
+            yield return getImp;
+            yield return ckVNB;
+            yield return groupSignalMode;
+            yield return groupSineWave;
+            yield return bSendV1;
+            yield return bGetV1;
+            yield return bSendV2;
+            yield return bGetV2;
+            yield return bSendVamp;
+            yield return bGetVamp;
+            yield return bSendVfreq;
+            yield return bGetVfreq;
+            yield return bSendVon;
+            yield return bGetVon;
+            yield return bSendVoff;
+            yield return bGetVoff;
+            yield return bSetMaxBlock;
+            yield return bStimMax;
+            yield return bZmin;
+            yield return bBlockMax;
+            yield return bDownloadLogs;
+            yield return bClearLogs;
+        }
+
+        private void SetIpgCommunicationLocked(bool locked)
+        {
+            void Apply()
+            {
+                if (locked)
+                {
+                    _savedControlEnabled.Clear();
+                    foreach (var control in GetIpgCommunicationControls())
+                    {
+                        _savedControlEnabled[control] = control.Enabled;
+                        control.Enabled = false;
+                    }
+                }
+                else if (_savedControlEnabled.Count > 0)
+                {
+                    foreach (var entry in _savedControlEnabled)
+                    {
+                        entry.Key.Enabled = entry.Value;
+                    }
+
+                    _savedControlEnabled.Clear();
+                }
+            }
+
+            if (InvokeRequired)
+            {
+                BeginInvoke((Action)Apply);
+            }
+            else
+            {
+                Apply();
+            }
+        }
+
+        private void UpdateLogDownloadProgress()
+        {
+            var count = _ipgLogEntries.Count;
+            var message = count == 0
+                ? "Downloading logs..."
+                : $"Downloading logs... ({count} entries)";
+
+            void Apply()
+            {
+                labelTX.Text = "Downloading logs";
+                labelRX.Text = message;
+            }
+
+            if (labelRX.InvokeRequired)
+            {
+                labelRX.BeginInvoke((Action)Apply);
+            }
+            else
+            {
+                Apply();
+            }
+        }
+
         private void StartLogDownload(bool eraseAfter = true)
         {
             if (_logDownloadInProgress) return;
             _logDownloadInProgress = true;
             _eraseAfterDownload = eraseAfter;
             _ipgLogEntries.Clear();
+            SetIpgCommunicationLocked(true);
+            UpdateLogDownloadProgress();
             Debug.WriteLine("--- IPG Log Download Start ---");
             byte[] data = new byte[9];
             data[0] = READ_IPG_LOG;
