@@ -246,6 +246,15 @@ namespace controller
                     string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
                     string fullPath = Path.Combine(desktop, fname);
 
+                    if (File.Exists(fullPath))
+                    {
+                        string stem = Path.GetFileNameWithoutExtension(fname);
+                        string ext = Path.GetExtension(fname);
+                        int n = 1;
+                        do { fullPath = Path.Combine(desktop, $"{stem}_{n++}{ext}"); }
+                        while (File.Exists(fullPath));
+                    }
+
                     csvWriter = new StreamWriter(fullPath, append: false);
 
                     // ----- Write file header -----
