@@ -103,7 +103,7 @@ namespace controller
         private readonly object csvLock = new object();
 
         // ######## DATA QUEUE ########
-        private readonly ConcurrentQueue<byte[]> dataQueue = new();
+        private readonly ConcurrentQueue<(byte[] data, long timestampMs)> dataQueue = new();
         private readonly AutoResetEvent dataEvent = new(false);
 
         // ######## BLE WRITE QUEUE #######
@@ -228,6 +228,7 @@ namespace controller
                 formsPlot1.Plot.Clear();
                 formsPlot1.Plot.Axes.SetLimitsX(0, PlotLen); //sec (PlotLen set by ResetSignalState)
 
+                isSaving = chkSave.Checked;
                 if (isSaving)
                 {
                     string dateStr = DateTime.Now.ToString("yyyy-MM-dd");
@@ -244,6 +245,15 @@ namespace controller
 
                     string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
                     string fullPath = Path.Combine(desktop, fname);
+
+                    if (File.Exists(fullPath))
+                    {
+                        string stem = Path.GetFileNameWithoutExtension(fname);
+                        string ext = Path.GetExtension(fname);
+                        int n = 1;
+                        do { fullPath = Path.Combine(desktop, $"{stem}_{n++}{ext}"); }
+                        while (File.Exists(fullPath));
+                    }
 
                     csvWriter = new StreamWriter(fullPath, append: false);
 
@@ -311,12 +321,13 @@ namespace controller
                     bView.Enabled = true;
                     groupSignalMode.Enabled = true;
                     labelTX.Text = "Stopped Data";
-                    isSaving = false;
-
-                    // Close CSV file
-                    csvWriter?.Flush();
-                    csvWriter?.Close();
-                    csvWriter = null;
+                    lock (csvLock)
+                    {
+                        isSaving = false;
+                        csvWriter?.Flush();
+                        csvWriter?.Close();
+                        csvWriter = null;
+                    }
                 }
             }
         }
@@ -854,7 +865,7 @@ namespace controller
             //Debug.WriteLine("Received BLE packet, bReceived=" + bReceived);
 
             //Attempt to add response to queue
-            dataQueue.Enqueue(packet);
+            dataQueue.Enqueue((packet, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
             dataEvent.Set();
             //Debug.WriteLine("Received Data");
         }
@@ -869,10 +880,10 @@ namespace controller
                 {
                     dataEvent.WaitOne();
 
-                    while (dataQueue.TryDequeue(out var packet))
+                    while (dataQueue.TryDequeue(out var item))
                     {
                         // Handle the packet in a separate function
-                        ProcessIncomingPacket(packet);
+                        ProcessIncomingPacket(item.data, item.timestampMs);
                     }
                 }
             }, token);
@@ -914,7 +925,7 @@ namespace controller
                 }
             }, token);
         }
-        private void ProcessIncomingPacket(byte[] bResponse)
+        private void ProcessIncomingPacket(byte[] bResponse, long packetTs)
         {
             switch (bResponse[0])
             {
@@ -947,9 +958,22 @@ namespace controller
                         // Update rolling display on every packet for responsive live view
                         UpdateRollingDisplay(CurPacket);
 
-                        // CSV save fires only after all 100 packets are received
-                        if (CurPacket == PacketCnt - 1)
-                            ProcessPlotSave(EMGdata);
+                        lock (csvLock)
+                        {
+                            if (isSaving && csvWriter != null)
+                            {
+                                double mean = packetRaw.Average(v => (double)v);
+                                var sb = new StringBuilder(3000);
+                                sb.Append(packetTs);
+                                foreach (var v in packetRaw) sb.Append(',').Append(v);
+                                sb.AppendLine();
+                                sb.Append(packetTs);
+                                foreach (var v in packetRaw) sb.Append($",{v - mean:F6}");
+                                sb.AppendLine();
+                                csvWriter.Write(sb.ToString());
+                                csvWriter.Flush();
+                            }
+                        }
                     }
                     else
                     {
@@ -1482,11 +1506,14 @@ namespace controller
                         labelV.BeginInvoke((Action)(() => labelV.Text = snapCount.ToString()));
                         labelRX.BeginInvoke((Action)(() => labelRX.Text = "Data+"));
 
-                        if (isSaving)
+                        lock (csvLock)
                         {
-                            csvWriter.WriteLine((XLN + 1) + "," + (0.1 * CurX) + "," + dLength + "," +
-                                                string.Join(",", Ydata.Select(b => b.ToString("F3"))));
-                            csvWriter.Flush();
+                            if (isSaving && csvWriter != null)
+                            {
+                                csvWriter.WriteLine((XLN + 1) + "," + packetTs + "," + dLength + "," +
+                                                    string.Join(",", Ydata.Select(b => b.ToString("F3"))));
+                                csvWriter.Flush();
+                            }
                         }
                     }
                     else // bad status or no data
@@ -1811,7 +1838,7 @@ namespace controller
                         */
 
                         usbRxBuffer.RemoveRange(0, expectedPacketLen);
-                        dataQueue.Enqueue(packet);
+                        dataQueue.Enqueue((packet, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
                         dataEvent.Set();
 
                         Debug.WriteLine("USB RX sent to dataQueue: " + BitConverter.ToString(packet));
@@ -2096,29 +2123,6 @@ namespace controller
             Debug.WriteLine($"ResetSignalState: mode={CurrentSignalMode} bufSize={bufSize} fs={cfg.SampleRate} dec={cfg.DecValue}");
         }
 
-        private void ProcessPlotSave(double[] raw)
-        {
-            if (raw == null || raw.Length < 10) { Debug.WriteLine("Signal packet too short!"); return; }
-
-            if (isSaving && csvWriter != null)
-            {
-                double mean = raw.Average();
-                double[] xCsv = raw.Select(v => v - mean).ToArray();
-
-                long ts = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                StringBuilder sb = new StringBuilder(400000);
-
-                sb.Append(ts);
-                for (int i = 0; i < bufferRaw.Length; i++) sb.Append($",{bufferRaw[i]}");
-                sb.AppendLine();
-
-                sb.Append(ts);
-                for (int i = 0; i < xCsv.Length; i++) sb.Append($",{xCsv[i]:F6}");
-                sb.AppendLine();
-
-                lock (csvLock) { csvWriter.Write(sb.ToString()); csvWriter.Flush(); }
-            }
-        }
 
         // -------- Rolling display helpers --------
         private double[] LinearizeRingBuffer()
