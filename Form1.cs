@@ -998,7 +998,7 @@ namespace controller
                         switch (bResponse[6])
                         {
                             case 0x32: // Get PA
-                                txtPA.BeginInvoke((Action)(() => txtPA.Text = (Math.Round((((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1), 1)).ToString()));
+                                txtPA.BeginInvoke((Action)(() => { txtPA.Text = (Math.Round((((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1), 1)).ToString(); StimInputValidation.MarkValid(txtPA); }));
                                 stimdata[0] = txtPA.Text;
                                 if (PMode == 9)
                                 {
@@ -1013,7 +1013,7 @@ namespace controller
                                 }
                                 break;
                             case 0x33: // Get PW
-                                txtPW.BeginInvoke((Action)(() => txtPW.Text = (((int)bResponse[8] * 256 + (int)bResponse[7]) * 50).ToString()));
+                                txtPW.BeginInvoke((Action)(() => { txtPW.Text = (((int)bResponse[8] * 256 + (int)bResponse[7]) * 50).ToString(); StimInputValidation.MarkValid(txtPW); }));
                                 stimdata[1] = txtPW.Text;
                                 if (PMode == 9)
                                 {
@@ -1028,7 +1028,7 @@ namespace controller
                                 }
                                 break;
                             case 0x34: // Get PF
-                                txtPF.BeginInvoke((Action)(() => txtPF.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
+                                txtPF.BeginInvoke((Action)(() => { txtPF.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString(); StimInputValidation.MarkValid(txtPF); }));
                                 stimdata[2] = txtPF.Text;
                                 if (PMode == 9)
                                 {
@@ -1042,8 +1042,8 @@ namespace controller
                                     labelRX.BeginInvoke((Action)(() => labelRX.Text = "Get Params"));
                                 }
                                 break;
-                            case 0x35: // Get PR 
-                                txtPR.BeginInvoke((Action)(() => txtPR.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
+                            case 0x35: // Get PR
+                                txtPR.BeginInvoke((Action)(() => { txtPR.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString(); StimInputValidation.MarkValid(txtPR); }));
                                 stimdata[3] = txtPR.Text;
                                 if (PMode == 9)
                                 {
@@ -1059,7 +1059,7 @@ namespace controller
 
                                 break;
                             case 0x37: // Get TN
-                                txtTN.BeginInvoke((Action)(() => txtTN.Text = (((int)bResponse[8] * 256 + (int)bResponse[7]) * 10).ToString()));
+                                txtTN.BeginInvoke((Action)(() => { txtTN.Text = (((int)bResponse[8] * 256 + (int)bResponse[7]) * 10).ToString(); StimInputValidation.MarkValid(txtTN); }));
                                 stimdata[4] = txtTN.Text;
                                 if (PMode == 9)
                                 {
@@ -1074,7 +1074,7 @@ namespace controller
                                 }
                                 break;
                             case 0x38: // Get TF
-                                txtTF.BeginInvoke((Action)(() => txtTF.Text = (((int)bResponse[8] * 256 + (int)bResponse[7]) * 10).ToString()));
+                                txtTF.BeginInvoke((Action)(() => { txtTF.Text = (((int)bResponse[8] * 256 + (int)bResponse[7]) * 10).ToString(); StimInputValidation.MarkValid(txtTF); }));
                                 stimdata[5] = txtTF.Text;
                                 if (PMode == 9)
                                 {
@@ -1089,7 +1089,7 @@ namespace controller
                                 }
                                 break;
                             case 0x39: // Get C1
-                                txtC1.BeginInvoke((Action)(() => txtC1.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
+                                txtC1.BeginInvoke((Action)(() => { txtC1.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString(); StimInputValidation.MarkValid(txtC1); }));
                                 stimdata[6] = txtC1.Text;
                                 if (PMode == 9)
                                 {
@@ -1112,7 +1112,7 @@ namespace controller
                         switch (bResponse[6])
                         {
                             case 0x30: // Get C2 - stim
-                                txtC2.BeginInvoke((Action)(() => txtC2.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
+                                txtC2.BeginInvoke((Action)(() => { txtC2.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString(); StimInputValidation.MarkValid(txtC2); }));
                                 stimdata[7] = txtC2.Text;
                                 if (PMode == 9 && useVNBlock)
                                 {
@@ -1128,7 +1128,7 @@ namespace controller
                                 break;
                             case 0x35: // Get VNB Amplitude
                                 Debug.WriteLine("VNB Amp: " + (((int)bResponse[8] * 256 + (int)bResponse[7] * 0.1).ToString()));
-                                txtVAmp.BeginInvoke((Action)(() => txtVAmp.Text = (Math.Round((((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1), 1)).ToString()));
+                                txtVAmp.BeginInvoke((Action)(() => { txtVAmp.Text = (Math.Round((((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1), 1)).ToString(); StimInputValidation.MarkValid(txtVAmp); }));
 
                                 if (PMode == 9 && useVNBlock)
                                 {
@@ -1145,7 +1145,7 @@ namespace controller
                                 break;
                             case 0x37: // Get VNB frequency
                                 Debug.WriteLine("VNB Frequency: " + (((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1).ToString());
-                                txtVfreq.BeginInvoke((Action)(() => txtVfreq.Text = (Math.Round((((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1), 1)).ToString()));
+                                txtVfreq.BeginInvoke((Action)(() => { txtVfreq.Text = (Math.Round((((int)bResponse[8] * 256 + (int)bResponse[7]) * 0.1), 1)).ToString(); StimInputValidation.MarkValid(txtVfreq); }));
 
                                 if (PMode == 9 && useVNBlock)
                                 {
@@ -1161,7 +1161,7 @@ namespace controller
                                 break;
                             case 0x38: // Get VNB on time
                                 Debug.WriteLine("VNB On Time: " + (((int)bResponse[8] * 256 + (int)bResponse[7])).ToString());
-                                txtVon.BeginInvoke((Action)(() => txtVon.Text = (Math.Round((((int)bResponse[8] * 256.0 + (int)bResponse[7])), 1)).ToString()));
+                                txtVon.BeginInvoke((Action)(() => { txtVon.Text = (Math.Round((((int)bResponse[8] * 256.0 + (int)bResponse[7])), 1)).ToString(); StimInputValidation.MarkValid(txtVon); }));
                                 if (PMode == 9 && useVNBlock)
                                 {
                                     byte[] data3 = [GET_SPARS, 0x04, 0x53, 0x50, 0x31, 0x39];
@@ -1177,14 +1177,14 @@ namespace controller
                             case 0x39: // Get VNB off time
 
                                 Debug.WriteLine("VNB Off Time: " + (((int)bResponse[8] * 256 + (int)bResponse[7])).ToString());
-                                txtVoff.BeginInvoke((Action)(() => txtVoff.Text = (Math.Round((((int)bResponse[8] * 256.0 + (int)bResponse[7])), 1)).ToString()));
+                                txtVoff.BeginInvoke((Action)(() => { txtVoff.Text = (Math.Round((((int)bResponse[8] * 256.0 + (int)bResponse[7])), 1)).ToString(); StimInputValidation.MarkValid(txtVoff); }));
                                 break;
                             case 0x31: // Get VNB cathode
-                                txtV1.BeginInvoke((Action)(() => txtV1.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
+                                txtV1.BeginInvoke((Action)(() => { txtV1.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString(); StimInputValidation.MarkValid(txtV1); }));
 
                                 break;
                             case 0x32: // Get VNB anode
-                                txtV2.BeginInvoke((Action)(() => txtV2.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString()));
+                                txtV2.BeginInvoke((Action)(() => { txtV2.Text = ((int)bResponse[8] * 256 + (int)bResponse[7]).ToString(); StimInputValidation.MarkValid(txtV2); }));
 
                                 break;
                             case 0x33:
