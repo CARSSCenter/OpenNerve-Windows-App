@@ -43,7 +43,7 @@ namespace controller
                 Height = 220,
                 Multiline = true,
                 ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
+                ScrollBars = ScrollBars.None,
                 Font = new Font("Consolas", 9F),
             };
             _statusLabel = new Label { Left = 12, Top = 160, Width = 488, Height = 20, Text = "Scanning..." };
@@ -213,6 +213,18 @@ namespace controller
             }
 
             _txtAdvertisement.Text = BleAdvertisementFormatter.Format(entry.payload, deviceType);
+            FitAdvertisementBox();
+        }
+
+        private void FitAdvertisementBox()
+        {
+            int lineHeight = TextRenderer.MeasureText("Ag", _txtAdvertisement.Font).Height;
+            _txtAdvertisement.Height = _txtAdvertisement.Lines.Length * lineHeight + 6;
+
+            int buttonsTop = _txtAdvertisement.Bottom + 8;
+            _connectButton.Top = buttonsTop;
+            _quitButton.Top = buttonsTop;
+            ClientSize = new Size(ClientSize.Width, buttonsTop + _connectButton.Height + 12);
         }
 
         private void ConnectButton_Click(object? sender, EventArgs e)
