@@ -1182,7 +1182,7 @@ namespace controller
             // chkFileLogging
             // 
             chkFileLogging.AutoSize = true;
-            chkFileLogging.Location = new Point(6, 26);
+            chkFileLogging.Location = new Point(80, 87);
             chkFileLogging.Name = "chkFileLogging";
             chkFileLogging.Size = new Size(163, 24);
             chkFileLogging.TabIndex = 92;
