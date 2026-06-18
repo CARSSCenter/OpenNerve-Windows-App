@@ -1248,7 +1248,7 @@ namespace controller
             // labelLogPath
             // 
             labelLogPath.AutoSize = true;
-            labelLogPath.Location = new Point(390, 92);
+            labelLogPath.Location = new Point(390, 124);
             labelLogPath.Name = "labelLogPath";
             labelLogPath.Size = new Size(72, 20);
             labelLogPath.TabIndex = 92;
@@ -1257,7 +1257,7 @@ namespace controller
             // txtLogPath
             // 
             txtLogPath.Font = new Font("Times New Roman", 11F);
-            txtLogPath.Location = new Point(470, 88);
+            txtLogPath.Location = new Point(470, 120);
             txtLogPath.Name = "txtLogPath";
             txtLogPath.Size = new Size(320, 29);
             txtLogPath.TabIndex = 93;
@@ -1265,7 +1265,7 @@ namespace controller
             // btnBrowseLogPath
             // 
             btnBrowseLogPath.Font = new Font("Times New Roman", 11F);
-            btnBrowseLogPath.Location = new Point(796, 86);
+            btnBrowseLogPath.Location = new Point(796, 118);
             btnBrowseLogPath.Name = "btnBrowseLogPath";
             btnBrowseLogPath.Size = new Size(80, 32);
             btnBrowseLogPath.TabIndex = 94;
@@ -1276,7 +1276,7 @@ namespace controller
             // labelLogFile
             // 
             labelLogFile.AutoSize = true;
-            labelLogFile.Location = new Point(390, 55);
+            labelLogFile.Location = new Point(390, 88);
             labelLogFile.Name = "labelLogFile";
             labelLogFile.Size = new Size(59, 20);
             labelLogFile.TabIndex = 95;
@@ -1285,7 +1285,7 @@ namespace controller
             // txtLogFile
             // 
             txtLogFile.Font = new Font("Times New Roman", 11F);
-            txtLogFile.Location = new Point(470, 51);
+            txtLogFile.Location = new Point(470, 84);
             txtLogFile.Name = "txtLogFile";
             txtLogFile.PlaceholderText = "OpenNerve_<timestamp>.txt";
             txtLogFile.Size = new Size(320, 29);
@@ -1294,7 +1294,7 @@ namespace controller
             // btnApplyLogSettings
             // 
             btnApplyLogSettings.Font = new Font("Times New Roman", 11F);
-            btnApplyLogSettings.Location = new Point(796, 49);
+            btnApplyLogSettings.Location = new Point(796, 82);
             btnApplyLogSettings.Name = "btnApplyLogSettings";
             btnApplyLogSettings.Size = new Size(120, 32);
             btnApplyLogSettings.TabIndex = 97;
