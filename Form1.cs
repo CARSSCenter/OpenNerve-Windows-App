@@ -1597,7 +1597,6 @@ namespace controller
         private void Form1_Load(object sender, EventArgs e)
         {
             _debugUiListener = new UiDebugTraceListener(txtDebugMessages);
-            Debug.Listeners.Add(_debugUiListener);
             Trace.Listeners.Add(_debugUiListener);
 
             Directory.SetCurrentDirectory(currentDir);
@@ -1637,7 +1636,6 @@ namespace controller
         {
             if (_debugUiListener != null)
             {
-                Debug.Listeners.Remove(_debugUiListener);
                 Trace.Listeners.Remove(_debugUiListener);
                 _debugUiListener = null;
             }
