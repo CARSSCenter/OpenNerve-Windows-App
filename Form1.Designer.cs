@@ -104,6 +104,12 @@ namespace controller
             ckVNB = new CheckBox();
             chkDev = new CheckBox();
             groupDev = new GroupBox();
+            labelLogPath = new System.Windows.Forms.Label();
+            txtLogPath = new TextBox();
+            btnBrowseLogPath = new Button();
+            labelLogFile = new System.Windows.Forms.Label();
+            txtLogFile = new TextBox();
+            btnApplyLogSettings = new Button();
             label16 = new System.Windows.Forms.Label();
             chkSave = new CheckBox();
             chkUSB = new CheckBox();
@@ -1180,6 +1186,12 @@ namespace controller
             // 
             // groupDev
             // 
+            groupDev.Controls.Add(btnApplyLogSettings);
+            groupDev.Controls.Add(txtLogFile);
+            groupDev.Controls.Add(labelLogFile);
+            groupDev.Controls.Add(btnBrowseLogPath);
+            groupDev.Controls.Add(txtLogPath);
+            groupDev.Controls.Add(labelLogPath);
             groupDev.Controls.Add(chkUSB);
             groupDev.Controls.Add(bDownloadLogs);
             groupDev.Controls.Add(bSetMaxBlock);
@@ -1192,7 +1204,7 @@ namespace controller
             groupDev.Enabled = false;
             groupDev.Location = new Point(6, 926);
             groupDev.Name = "groupDev";
-            groupDev.Size = new Size(1055, 117);
+            groupDev.Size = new Size(1055, 155);
             groupDev.TabIndex = 83;
             groupDev.TabStop = false;
             groupDev.Visible = false;
@@ -1232,6 +1244,63 @@ namespace controller
             chkUSB.Text = "USB?";
             chkUSB.UseVisualStyleBackColor = true;
             chkUSB.CheckedChanged += chkUSB_CheckedChanged;
+            // 
+            // labelLogPath
+            // 
+            labelLogPath.AutoSize = true;
+            labelLogPath.Location = new Point(390, 124);
+            labelLogPath.Name = "labelLogPath";
+            labelLogPath.Size = new Size(72, 20);
+            labelLogPath.TabIndex = 92;
+            labelLogPath.Text = "Log folder";
+            // 
+            // txtLogPath
+            // 
+            txtLogPath.Font = new Font("Times New Roman", 11F);
+            txtLogPath.Location = new Point(470, 120);
+            txtLogPath.Name = "txtLogPath";
+            txtLogPath.Size = new Size(320, 29);
+            txtLogPath.TabIndex = 93;
+            // 
+            // btnBrowseLogPath
+            // 
+            btnBrowseLogPath.Font = new Font("Times New Roman", 11F);
+            btnBrowseLogPath.Location = new Point(796, 118);
+            btnBrowseLogPath.Name = "btnBrowseLogPath";
+            btnBrowseLogPath.Size = new Size(80, 32);
+            btnBrowseLogPath.TabIndex = 94;
+            btnBrowseLogPath.Text = "Browse";
+            btnBrowseLogPath.UseVisualStyleBackColor = true;
+            btnBrowseLogPath.Click += btnBrowseLogPath_Click;
+            // 
+            // labelLogFile
+            // 
+            labelLogFile.AutoSize = true;
+            labelLogFile.Location = new Point(390, 88);
+            labelLogFile.Name = "labelLogFile";
+            labelLogFile.Size = new Size(59, 20);
+            labelLogFile.TabIndex = 95;
+            labelLogFile.Text = "Log file";
+            // 
+            // txtLogFile
+            // 
+            txtLogFile.Font = new Font("Times New Roman", 11F);
+            txtLogFile.Location = new Point(470, 84);
+            txtLogFile.Name = "txtLogFile";
+            txtLogFile.PlaceholderText = "OpenNerve_<timestamp>.txt";
+            txtLogFile.Size = new Size(320, 29);
+            txtLogFile.TabIndex = 96;
+            // 
+            // btnApplyLogSettings
+            // 
+            btnApplyLogSettings.Font = new Font("Times New Roman", 11F);
+            btnApplyLogSettings.Location = new Point(796, 82);
+            btnApplyLogSettings.Name = "btnApplyLogSettings";
+            btnApplyLogSettings.Size = new Size(120, 32);
+            btnApplyLogSettings.TabIndex = 97;
+            btnApplyLogSettings.Text = "Apply logging";
+            btnApplyLogSettings.UseVisualStyleBackColor = true;
+            btnApplyLogSettings.Click += btnApplyLogSettings_Click;
             // 
             // Form1
             // 
@@ -1406,6 +1475,12 @@ namespace controller
         private RadioButton rbXLR;
         private CheckBox chkDev;
         private GroupBox groupDev;
+        private System.Windows.Forms.Label labelLogPath;
+        private TextBox txtLogPath;
+        private Button btnBrowseLogPath;
+        private System.Windows.Forms.Label labelLogFile;
+        private TextBox txtLogFile;
+        private Button btnApplyLogSettings;
         public System.Windows.Forms.Label label16;
         private CheckBox chkSave;
         private CheckBox chkUSB;
