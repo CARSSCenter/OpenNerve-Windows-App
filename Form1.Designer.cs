@@ -104,6 +104,8 @@ namespace controller
             ckVNB = new CheckBox();
             chkDev = new CheckBox();
             groupDev = new GroupBox();
+            labelDebugOutput = new System.Windows.Forms.Label();
+            txtDebugMessages = new TextBox();
             label16 = new System.Windows.Forms.Label();
             chkSave = new CheckBox();
             chkUSB = new CheckBox();
@@ -1180,6 +1182,8 @@ namespace controller
             // 
             // groupDev
             // 
+            groupDev.Controls.Add(txtDebugMessages);
+            groupDev.Controls.Add(labelDebugOutput);
             groupDev.Controls.Add(chkUSB);
             groupDev.Controls.Add(bDownloadLogs);
             groupDev.Controls.Add(bSetMaxBlock);
@@ -1192,10 +1196,31 @@ namespace controller
             groupDev.Enabled = false;
             groupDev.Location = new Point(6, 926);
             groupDev.Name = "groupDev";
-            groupDev.Size = new Size(1055, 117);
+            groupDev.Size = new Size(1055, 220);
             groupDev.TabIndex = 83;
             groupDev.TabStop = false;
             groupDev.Visible = false;
+            // 
+            // labelDebugOutput
+            // 
+            labelDebugOutput.AutoSize = true;
+            labelDebugOutput.Location = new Point(6, 118);
+            labelDebugOutput.Name = "labelDebugOutput";
+            labelDebugOutput.Size = new Size(99, 20);
+            labelDebugOutput.TabIndex = 92;
+            labelDebugOutput.Text = "Debug output";
+            // 
+            // txtDebugMessages
+            // 
+            txtDebugMessages.Font = new Font("Consolas", 9F);
+            txtDebugMessages.Location = new Point(6, 141);
+            txtDebugMessages.Multiline = true;
+            txtDebugMessages.Name = "txtDebugMessages";
+            txtDebugMessages.ReadOnly = true;
+            txtDebugMessages.ScrollBars = ScrollBars.Vertical;
+            txtDebugMessages.Size = new Size(1043, 72);
+            txtDebugMessages.TabIndex = 93;
+            txtDebugMessages.WordWrap = false;
             // 
             // label16
             // 
@@ -1406,6 +1431,8 @@ namespace controller
         private RadioButton rbXLR;
         private CheckBox chkDev;
         private GroupBox groupDev;
+        private System.Windows.Forms.Label labelDebugOutput;
+        private TextBox txtDebugMessages;
         public System.Windows.Forms.Label label16;
         private CheckBox chkSave;
         private CheckBox chkUSB;
