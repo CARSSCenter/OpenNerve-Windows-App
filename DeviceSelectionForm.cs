@@ -16,6 +16,12 @@ namespace controller
         private readonly Button _quitButton;
         private readonly Label _statusLabel;
         private readonly System.Windows.Forms.Timer _staleTimer;
+        private readonly Button _btnLog;
+        private readonly TextBox _txtLogFilename;
+
+        private StreamWriter? _csvWriter;
+        private ulong _loggedDeviceAddr;
+        private bool _isLogging;
 
         private class DeviceItem
         {
@@ -35,10 +41,25 @@ namespace controller
             StartPosition = FormStartPosition.CenterScreen;
 
             _listBox = new ListBox { Left = 12, Top = 12, Width = 488, Height = 140 };
+            _btnLog = new Button
+            {
+                Left = 12, Top = 188, Width = 110, Height = 24,
+                Text = "Start Logging",
+                FlatStyle = FlatStyle.Flat,
+                BackColor = SystemColors.Control,
+                Enabled = false
+            };
+            _txtLogFilename = new TextBox
+            {
+                Left = 128, Top = 188, Width = 372, Height = 24,
+                PlaceholderText = "filename (blank = auto)"
+            };
+            _btnLog.Click += BtnLog_Click;
+
             _txtAdvertisement = new TextBox
             {
                 Left = 12,
-                Top = 188,
+                Top = 222,
                 Width = 488,
                 Height = 220,
                 Multiline = true,
@@ -55,7 +76,7 @@ namespace controller
             _connectButton.Click += ConnectButton_Click;
             _quitButton.Click += (s, e) => Application.Exit();
 
-            Controls.AddRange(new Control[] { _listBox, _statusLabel, _txtAdvertisement, _connectButton, _quitButton });
+            Controls.AddRange(new Control[] { _listBox, _statusLabel, _btnLog, _txtLogFilename, _txtAdvertisement, _connectButton, _quitButton });
 
             _staleTimer = new System.Windows.Forms.Timer { Interval = 2000 };
             _staleTimer.Tick += StaleTimer_Tick;
@@ -71,6 +92,9 @@ namespace controller
 
         public void StartScanning()
         {
+            StopLogging("Scanning restarted");
+            UpdateLogButton();
+
             if (_watcher != null)
             {
                 _watcher.Received -= Watcher_Received;
@@ -145,6 +169,11 @@ namespace controller
                     {
                         ShowAdvertisement(addr, devType);
                     }
+                    if (_isLogging && addr == _loggedDeviceAddr)
+                    {
+                        _csvWriter!.WriteLine(BleAdvertisementFormatter.ToCsvRow(
+                            payload, devType, MacFromAddr(addr), DateTime.Now));
+                    }
                 }));
 
                 break;
@@ -161,6 +190,11 @@ namespace controller
 
             foreach (var addr in stale)
             {
+                if (_isLogging && addr == _loggedDeviceAddr)
+                {
+                    StopLogging("Device disappeared");
+                    UpdateLogButton();
+                }
                 _lastSeen.Remove(addr);
                 _devices.Remove(addr);
             }
@@ -185,6 +219,7 @@ namespace controller
             _listBox.EndUpdate();
 
             _connectButton.Enabled = _listBox.SelectedIndex >= 0;
+            UpdateLogButton();
             if (_listBox.SelectedIndex < 0)
             {
                 _txtAdvertisement.Clear();
@@ -194,6 +229,7 @@ namespace controller
         private void ListBox_SelectedIndexChanged(object? sender, EventArgs e)
         {
             _connectButton.Enabled = _listBox.SelectedIndex >= 0;
+            UpdateLogButton();
             if (_listBox.SelectedItem is not DeviceItem item)
             {
                 _txtAdvertisement.Clear();
@@ -232,11 +268,95 @@ namespace controller
             if (_listBox.SelectedItem is not DeviceItem item) return;
             if (!_devices.TryGetValue(item.Address, out var entry)) return;
 
+            StopLogging("Device connected");
             StopScanning();
 
             var mainForm = new Form1(item.Address, entry.advData, this);
             this.Hide();
             mainForm.Show();
         }
+
+        private void BtnLog_Click(object? sender, EventArgs e)
+        {
+            if (_isLogging)
+            {
+                StopLogging("Logging stopped by user");
+            }
+            else
+            {
+                if (_listBox.SelectedItem is not DeviceItem item) return;
+                StartLogging(item.Address);
+            }
+            UpdateLogButton();
+        }
+
+        private void UpdateLogButton()
+        {
+            if (_isLogging)
+            {
+                _btnLog.Text = "Stop Logging";
+                _btnLog.BackColor = Color.Tomato;
+                _btnLog.ForeColor = Color.White;
+                _btnLog.Enabled = true;
+            }
+            else
+            {
+                _btnLog.Text = "Start Logging";
+                bool deviceSelected = _listBox.SelectedIndex >= 0;
+                _btnLog.BackColor = deviceSelected ? Color.MediumSeaGreen : SystemColors.Control;
+                _btnLog.ForeColor = deviceSelected ? Color.White : SystemColors.ControlText;
+                _btnLog.Enabled = deviceSelected;
+            }
+        }
+
+        private void StartLogging(ulong addr)
+        {
+            string fname = _txtLogFilename.Text.Trim();
+            if (string.IsNullOrEmpty(fname))
+                fname = $"DeviceLog_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}";
+            if (!fname.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                fname += ".csv";
+
+            string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+            string path = Path.Combine(desktop, fname);
+
+            if (File.Exists(path))
+            {
+                string stem = Path.GetFileNameWithoutExtension(fname);
+                string ext = Path.GetExtension(fname);
+                int n = 1;
+                do { path = Path.Combine(desktop, $"{stem}_{n++}{ext}"); } while (File.Exists(path));
+            }
+
+            _csvWriter = new StreamWriter(path, append: false) { AutoFlush = true };
+            _csvWriter.WriteLine(BleAdvertisementFormatter.CsvHeader());
+            _loggedDeviceAddr = addr;
+            _isLogging = true;
+        }
+
+        private void StopLogging(string reason)
+        {
+            if (!_isLogging || _csvWriter == null) return;
+
+            if (_devices.TryGetValue(_loggedDeviceAddr, out var entry))
+            {
+                string devType = entry.advData[23] == 1 ? "DVT" : "SRS";
+                _csvWriter.WriteLine(BleAdvertisementFormatter.ToCsvRow(
+                    entry.payload, devType, MacFromAddr(_loggedDeviceAddr), DateTime.Now, notes: reason));
+            }
+            else
+            {
+                _csvWriter.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff},,,,,,,,,,,,,,,{reason}");
+            }
+
+            _csvWriter.Close();
+            _csvWriter = null;
+            _isLogging = false;
+        }
+
+        private static string MacFromAddr(ulong addr) =>
+            $"{(addr >> 40) & 0xFF:X2}:{(addr >> 32) & 0xFF:X2}:" +
+            $"{(addr >> 24) & 0xFF:X2}:{(addr >> 16) & 0xFF:X2}:" +
+            $"{(addr >> 8) & 0xFF:X2}:{addr & 0xFF:X2}";
     }
 }
