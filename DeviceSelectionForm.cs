@@ -21,7 +21,11 @@ namespace controller
 
         private StreamWriter? _csvWriter;
         private ulong _loggedDeviceAddr;
-        private bool _isLogging;
+        private bool _isLogging;      // a log file is open
+        private bool _deviceMissing;  // ...but the logged device is currently silent
+
+        private const int LogGapSeconds = 3;        // mark "Disconnected" after this much silence
+        private const int StaleRemovalSeconds = 10; // drop a non-logged device from the list
 
         private class DeviceItem
         {
@@ -78,10 +82,10 @@ namespace controller
 
             Controls.AddRange(new Control[] { _listBox, _statusLabel, _btnLog, _txtLogFilename, _txtAdvertisement, _connectButton, _quitButton });
 
-            _staleTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+            _staleTimer = new System.Windows.Forms.Timer { Interval = 1000 };
             _staleTimer.Tick += StaleTimer_Tick;
 
-            FormClosing += (s, e) => Application.Exit();
+            FormClosing += (s, e) => { StopLogging("Application closed"); Application.Exit(); };
         }
 
         protected override void OnLoad(EventArgs e)
@@ -164,15 +168,25 @@ namespace controller
                 {
                     _lastSeen[addr] = DateTime.UtcNow;
                     _devices[addr] = (display, advBytes, payload);
+
+                    // Resume before RebuildListBox so the "no signal" marker in the list clears
+                    // on the same advertisement that ends the gap.
+                    if (_isLogging && addr == _loggedDeviceAddr)
+                    {
+                        if (_deviceMissing)
+                        {
+                            _deviceMissing = false;
+                            WriteLogMarker("Reconnected");
+                            _statusLabel.Text = $"Logging {mac}";
+                        }
+                        _csvWriter!.WriteLine(BleAdvertisementFormatter.ToCsvRow(
+                            payload, devType, mac, DateTime.Now));
+                    }
+
                     RebuildListBox();
                     if (_listBox.SelectedItem is DeviceItem selected && selected.Address == addr)
                     {
                         ShowAdvertisement(addr, devType);
-                    }
-                    if (_isLogging && addr == _loggedDeviceAddr)
-                    {
-                        _csvWriter!.WriteLine(BleAdvertisementFormatter.ToCsvRow(
-                            payload, devType, MacFromAddr(addr), DateTime.Now));
                     }
                 }));
 
@@ -182,23 +196,35 @@ namespace controller
 
         private void StaleTimer_Tick(object? sender, EventArgs e)
         {
-            var cutoff = DateTime.UtcNow - TimeSpan.FromSeconds(10);
-            var stale = _lastSeen.Where(kv => kv.Value < cutoff)
-                                 .Select(kv => kv.Key)
-                                 .ToList();
-            if (stale.Count == 0) return;
+            var now = DateTime.UtcNow;
+            bool listChanged = false;
 
-            foreach (var addr in stale)
+            // A dropout only pauses the session - the file stays open so the device can resume
+            // into it. The _deviceMissing guard keeps this to one marker row per gap.
+            if (_isLogging && !_deviceMissing &&
+                _lastSeen.TryGetValue(_loggedDeviceAddr, out var lastSeen) &&
+                lastSeen < now - TimeSpan.FromSeconds(LogGapSeconds))
             {
-                if (_isLogging && addr == _loggedDeviceAddr)
-                {
-                    StopLogging("Device disappeared");
-                    UpdateLogButton();
-                }
+                _deviceMissing = true;
+                WriteLogMarker("Disconnected");
+                _statusLabel.Text = $"Logging {MacFromAddr(_loggedDeviceAddr)} - signal lost, waiting...";
+                listChanged = true;
+            }
+
+            var cutoff = now - TimeSpan.FromSeconds(StaleRemovalSeconds);
+            foreach (var addr in _lastSeen.Where(kv => kv.Value < cutoff)
+                                          .Select(kv => kv.Key)
+                                          .ToList())
+            {
+                // Keep the device being logged in the list so its selection survives the gap.
+                if (_isLogging && addr == _loggedDeviceAddr) continue;
+
                 _lastSeen.Remove(addr);
                 _devices.Remove(addr);
+                listChanged = true;
             }
-            RebuildListBox();
+
+            if (listChanged) RebuildListBox();
         }
 
         private void RebuildListBox()
@@ -211,7 +237,11 @@ namespace controller
             _listBox.Items.Clear();
             foreach (var kv in _devices)
             {
-                var item = new DeviceItem(kv.Key, kv.Value.displayName);
+                string display = kv.Value.displayName;
+                if (_isLogging && _deviceMissing && kv.Key == _loggedDeviceAddr)
+                    display += "  -- no signal";
+
+                var item = new DeviceItem(kv.Key, display);
                 _listBox.Items.Add(item);
                 if (selectedAddr.HasValue && kv.Key == selectedAddr.Value)
                     _listBox.SelectedItem = item;
@@ -287,7 +317,7 @@ namespace controller
                 if (_listBox.SelectedItem is not DeviceItem item) return;
                 StartLogging(item.Address);
             }
-            UpdateLogButton();
+            RebuildListBox();   // also calls UpdateLogButton; clears any "no signal" suffix
         }
 
         private void UpdateLogButton()
@@ -332,13 +362,23 @@ namespace controller
             _csvWriter.WriteLine(BleAdvertisementFormatter.CsvHeader());
             _loggedDeviceAddr = addr;
             _isLogging = true;
+            _deviceMissing = false;
+            _statusLabel.Text = $"Logging {MacFromAddr(addr)}";
+        }
+
+        private void WriteLogMarker(string note)
+        {
+            _csvWriter?.WriteLine(BleAdvertisementFormatter.MarkerRow(
+                MacFromAddr(_loggedDeviceAddr), DateTime.Now, note));
         }
 
         private void StopLogging(string reason)
         {
             if (!_isLogging || _csvWriter == null) return;
 
-            if (_devices.TryGetValue(_loggedDeviceAddr, out var entry))
+            // Only attach the reason to a real reading if the device is actually present -
+            // otherwise the last-known payload would be re-emitted as if it were fresh.
+            if (!_deviceMissing && _devices.TryGetValue(_loggedDeviceAddr, out var entry))
             {
                 string devType = entry.advData[23] == 1 ? "DVT" : "SRS";
                 _csvWriter.WriteLine(BleAdvertisementFormatter.ToCsvRow(
@@ -346,12 +386,14 @@ namespace controller
             }
             else
             {
-                _csvWriter.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff},,,,,,,,,,,,,,,{reason}");
+                WriteLogMarker(reason);
             }
 
             _csvWriter.Close();
             _csvWriter = null;
             _isLogging = false;
+            _deviceMissing = false;
+            _statusLabel.Text = "Scanning...";
         }
 
         private static string MacFromAddr(ulong addr) =>

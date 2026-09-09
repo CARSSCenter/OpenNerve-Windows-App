@@ -8,6 +8,20 @@ internal static class BleAdvertisementFormatter
         "Timestamp,Device,Type,DVDD_V,BattA_V,BattB_V,ImpA_V,ImpB_V,Temp_C," +
         "CoilPresent,CHG1_Charging,CHG2_Charging,WirelessActive,WirelessPaused,HW_Version,Notes";
 
+    private const int ColumnCount = 16;   // must match CsvHeader()
+
+    // A row carrying only a timestamp, the device and a note. Measurement columns are left blank
+    // so a session marker is never mistaken for a real reading.
+    public static string MarkerRow(string mac, DateTime ts, string note)
+    {
+        var fields = new string[ColumnCount];
+        Array.Fill(fields, "");
+        fields[0] = ts.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        fields[1] = mac;
+        fields[^1] = note;
+        return string.Join(",", fields);
+    }
+
     public static string ToCsvRow(byte[] payload, string deviceType, string mac, DateTime ts, string notes = "")
     {
         string tempStr = payload.Length >= 8
