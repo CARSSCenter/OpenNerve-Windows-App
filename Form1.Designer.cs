@@ -317,7 +317,7 @@ namespace controller
             label4.Name = "label4";
             label4.Size = new Size(240, 33);
             label4.TabIndex = 29;
-            label4.Text = "Ramp, 1-10";
+            label4.Text = "Ramp, 0-10";
             label4.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // bGet

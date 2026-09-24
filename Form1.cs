@@ -463,7 +463,7 @@ namespace controller
         }
         private void bSendPR_Click(object sender, EventArgs e)
         {
-            if (!StimInputValidation.TryParseInt(txtPR, "Ramp", 1, 10, out var ramp, ReportParameterError))
+            if (!StimInputValidation.TryParseInt(txtPR, "Ramp", 0, 10, out var ramp, ReportParameterError))
             {
                 return;
             }
@@ -1235,7 +1235,7 @@ namespace controller
                             break;
                         case 1: // set RampDown
                             PMode = 0;
-                            if (!StimInputValidation.TryParseInt(txtPR, "Ramp", 1, 10, out var rampDown, ReportParameterError))
+                            if (!StimInputValidation.TryParseInt(txtPR, "Ramp", 0, 10, out var rampDown, ReportParameterError))
                             {
                                 break;
                             }
