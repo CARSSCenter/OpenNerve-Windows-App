@@ -384,6 +384,91 @@ namespace controller
             Shutdown.Enabled = false;
             Sending([SHUTDOWN_SYSTEM, 0x00]);
         }
+
+        // Probes every COM port with GET_RTC on a temporary SerialPort, independent of the BLE session
+        // and the chkUSB transport. Any valid 0xB0 reply (real RTC or USER_CLASS_ERR) proves the USB-C link.
+        private async void bTestUSB_Click(object sender, EventArgs e)
+        {
+            Debug.WriteLine("TX Test USB");
+            labelTX.Text = "Test USB";
+            labelRX.Text = "Testing USB...";
+            bTestUSB.Enabled = false;
+            string result = await Task.Run(ProbeUsbPorts);
+            Debug.WriteLine("RX Test USB: " + result);
+            labelRX.Text = result;
+            bTestUSB.Enabled = !_logDownloadInProgress && !_logEraseInProgress;
+        }
+
+        private string ProbeUsbPorts()
+        {
+            string[] ports = SerialPort.GetPortNames();
+            if (ports.Length == 0) return "No COM ports found";
+
+            byte[] frame = BuildFrame([GET_RTC, 0x00]);
+            var tried = new List<string>();
+            foreach (string name in ports)
+            {
+                if (port != null && port.IsOpen && port.PortName == name)
+                {
+                    Debug.WriteLine($"USB test: skipping {name} (in use by USB transport)");
+                    continue;
+                }
+                tried.Add(name);
+                try
+                {
+                    using var sp = new SerialPort(name, 115200, Parity.None, 8, StopBits.One) { WriteTimeout = 200 };
+                    sp.Open();
+                    sp.DiscardInBuffer();
+                    sp.Write(frame, 0, frame.Length);
+                    Debug.WriteLine($"USB test TX {name}: " + BitConverter.ToString(frame));
+
+                    // IPG polls the debug UART only every ~1 s while BLE-connected (BLE_ACCESS_TIME_MS)
+                    var rx = new List<byte>();
+                    var sw = Stopwatch.StartNew();
+                    while (sw.ElapsedMilliseconds < 1500)
+                    {
+                        int n = sp.BytesToRead;
+                        if (n == 0) { Thread.Sleep(10); continue; }
+                        byte[] buf = new byte[n];
+                        sp.Read(buf, 0, n);
+                        rx.AddRange(buf);
+                        if (TryParseResponse(rx, GET_RTC, out byte status, out byte[] payload))
+                        {
+                            Debug.WriteLine($"USB test RX {name}: " + BitConverter.ToString(rx.ToArray()));
+                            if (status == 0x00 && payload.Length == 6)
+                                return $"USB OK on {name} - IPG RTC 20{payload[0]:D2}-{payload[1]:D2}-{payload[2]:D2} {payload[3]:D2}:{payload[4]:D2}:{payload[5]:D2}";
+                            if (status == 0xF3)
+                                return $"USB OK on {name} (link works, not authenticated)";
+                            return $"USB OK on {name} (status 0x{status:X2})";
+                        }
+                    }
+                    Debug.WriteLine($"USB test {name}: no valid reply, got " + BitConverter.ToString(rx.ToArray()));
+                }
+                catch (Exception ex) { Debug.WriteLine($"USB test {name}: {ex.Message}"); }
+            }
+            return tried.Count == 0 ? "No free COM ports to test" : $"No USB response (ports tried: {string.Join(", ", tried)})";
+        }
+
+        // Finds a response frame [op, len, status, payload..., crc16 LE] for expectedOp with a valid CRC
+        private static bool TryParseResponse(List<byte> buf, byte expectedOp, out byte status, out byte[] payload)
+        {
+            status = 0;
+            payload = [];
+            for (int start = 0; start + 5 <= buf.Count; start++)
+            {
+                if (buf[start] != expectedOp) continue;
+                int len = buf[start + 1];
+                int frameLen = 3 + len + 2;
+                if (start + frameLen > buf.Count) continue;
+                byte[] frame = buf.GetRange(start, frameLen).ToArray();
+                ushort crc = Crc16Ccitt(frame, frameLen - 2);
+                if ((frame[frameLen - 2] | (frame[frameLen - 1] << 8)) != crc) continue;
+                status = frame[2];
+                payload = frame[3..(3 + len)];
+                return true;
+            }
+            return false;
+        }
         private void ReportParameterError(TextBox input, string message)
         {
             StimInputValidation.MarkInvalid(input);
@@ -619,6 +704,35 @@ namespace controller
             }
         }
 
+        private static ushort Crc16Ccitt(byte[] data, int length)
+        {
+            const ushort polynomial = 0x1021; // CRC-16/CCITT-FALSE polynomial
+            ushort crc = 0xFFFF; // Initial value
+            for (int j = 0; j < length; j++)
+            {
+                crc ^= (ushort)(data[j] << 8); // Shift the current byte to the high bits and XOR with CRC
+                for (int i = 0; i < 8; i++) // Perform 8 bit-shifting operations per byte
+                {
+                    if ((crc & 0x8000) != 0) // If the highest bit is 1
+                    { crc = (ushort)((crc << 1) ^ polynomial); }
+                    else
+                    { crc <<= 1; }
+                }
+            }
+            return crc;
+        }
+
+        // Appends the CRC16 (little-endian) to a command
+        private static byte[] BuildFrame(byte[] data)
+        {
+            ushort crc = Crc16Ccitt(data, data.Length);
+            byte[] packet = new byte[data.Length + 2];
+            Array.Copy(data, packet, data.Length);
+            packet[data.Length] = (byte)(crc & 0xFF);
+            packet[data.Length + 1] = (byte)((crc >> 8) & 0xFF);
+            return packet;
+        }
+
         private void Sending(byte[] data)
         {
             if (_logDownloadInProgress && data.Length > 0)
@@ -631,24 +745,7 @@ namespace controller
                 }
             }
 
-            byte[] packet = data.ToArray();
-            int dataLength = packet.Length;
-            const ushort polynomial = 0x1021; // CRC-16/CCITT-FALSE polynomial
-            ushort crc = 0xFFFF; // Initial value
-            foreach (byte b in packet)
-            {
-                crc ^= (ushort)(b << 8); // Shift the current byte to the high bits and XOR with CRC
-                for (int i = 0; i < 8; i++) // // Perform 8 bit-shifting operations per byte
-                {
-                    if ((crc & 0x8000) != 0) // If the highest bit is 1
-                    { crc = (ushort)((crc << 1) ^ polynomial); }
-                    else
-                    { crc <<= 1; }
-                }
-            }
-            byte[] calCRC16 = [(byte)(crc & 0xFF), (byte)((crc >> 8) & 0xFF),];
-            Array.Resize(ref packet, dataLength + 2);
-            Array.Copy(calCRC16, 0, packet, dataLength, 2);
+            byte[] packet = BuildFrame(data);
 
             if (useBluetooth)
             {
@@ -1987,6 +2084,7 @@ namespace controller
             yield return bDownloadLogs;
             yield return bClearLogs;
             yield return Shutdown;
+            yield return bTestUSB;
         }
 
         private void SetIpgCommunicationLocked(bool locked)

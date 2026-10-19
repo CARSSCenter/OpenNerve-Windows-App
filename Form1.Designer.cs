@@ -108,6 +108,7 @@ namespace controller
             label16 = new System.Windows.Forms.Label();
             chkSave = new CheckBox();
             Shutdown = new Button();
+            bTestUSB = new Button();
             groupSignalMode.SuspendLayout();
             groupSineWave.SuspendLayout();
             groupDev.SuspendLayout();
@@ -1181,6 +1182,7 @@ namespace controller
             // 
             // groupDev
             // 
+            groupDev.Controls.Add(bTestUSB);
             groupDev.Controls.Add(Shutdown);
             groupDev.Controls.Add(chkUSB);
             groupDev.Controls.Add(bDownloadLogs);
@@ -1244,7 +1246,17 @@ namespace controller
             Shutdown.Text = "Shut Down IPG";
             Shutdown.UseVisualStyleBackColor = true;
             Shutdown.Click += Shutdown_Click;
-            // 
+            //
+            // bTestUSB
+            //
+            bTestUSB.Location = new Point(1269, 26);
+            bTestUSB.Name = "bTestUSB";
+            bTestUSB.Size = new Size(172, 54);
+            bTestUSB.TabIndex = 93;
+            bTestUSB.Text = "Test USB";
+            bTestUSB.UseVisualStyleBackColor = true;
+            bTestUSB.Click += bTestUSB_Click;
+            //
             // Form1
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -1422,5 +1434,6 @@ namespace controller
         private CheckBox chkSave;
         private CheckBox chkUSB;
         private Button Shutdown;
+        private Button bTestUSB;
     }
 }
