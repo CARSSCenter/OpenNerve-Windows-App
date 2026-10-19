@@ -91,6 +91,10 @@ namespace controller
 
         //Tag for whether to use Bluetooth or USB
         private static bool useBluetooth = true;
+        private const int UsbBaudRate = 115200;
+        private const int UsbReplyTimeoutMs = 1500; // IPG services its UART only every ~1 s while BLE-connected
+        private readonly AutoResetEvent _usbReplyEvent = new(false);
+        private volatile int _usbAwaitOpcode = -1; // opcode the USB writer is waiting on, -1 = none
 
         //Flag forGen1 or gen2
         private static int BoardGen = 2;
@@ -393,16 +397,16 @@ namespace controller
             labelTX.Text = "Test USB";
             labelRX.Text = "Testing USB...";
             bTestUSB.Enabled = false;
-            string result = await Task.Run(ProbeUsbPorts);
+            var (_, result) = await Task.Run(ProbeUsbPorts);
             Debug.WriteLine("RX Test USB: " + result);
             labelRX.Text = result;
             bTestUSB.Enabled = !_logDownloadInProgress && !_logEraseInProgress;
         }
 
-        private string ProbeUsbPorts()
+        private (string? PortName, string Message) ProbeUsbPorts()
         {
             string[] ports = SerialPort.GetPortNames();
-            if (ports.Length == 0) return "No COM ports found";
+            if (ports.Length == 0) return (null, "No COM ports found");
 
             byte[] frame = BuildFrame([GET_RTC, 0x00]);
             var tried = new List<string>();
@@ -416,7 +420,7 @@ namespace controller
                 tried.Add(name);
                 try
                 {
-                    using var sp = new SerialPort(name, 115200, Parity.None, 8, StopBits.One) { WriteTimeout = 200 };
+                    using var sp = new SerialPort(name, UsbBaudRate, Parity.None, 8, StopBits.One) { WriteTimeout = 200 };
                     sp.Open();
                     sp.DiscardInBuffer();
                     sp.Write(frame, 0, frame.Length);
@@ -436,17 +440,17 @@ namespace controller
                         {
                             Debug.WriteLine($"USB test RX {name}: " + BitConverter.ToString(rx.ToArray()));
                             if (status == 0x00 && payload.Length == 6)
-                                return $"USB OK on {name} - IPG RTC 20{payload[0]:D2}-{payload[1]:D2}-{payload[2]:D2} {payload[3]:D2}:{payload[4]:D2}:{payload[5]:D2}";
+                                return (name, $"USB OK on {name} - IPG RTC 20{payload[0]:D2}-{payload[1]:D2}-{payload[2]:D2} {payload[3]:D2}:{payload[4]:D2}:{payload[5]:D2}");
                             if (status == 0xF3)
-                                return $"USB OK on {name} (link works, not authenticated)";
-                            return $"USB OK on {name} (status 0x{status:X2})";
+                                return (name, $"USB OK on {name} (link works, not authenticated)");
+                            return (name, $"USB OK on {name} (status 0x{status:X2})");
                         }
                     }
                     Debug.WriteLine($"USB test {name}: no valid reply, got " + BitConverter.ToString(rx.ToArray()));
                 }
                 catch (Exception ex) { Debug.WriteLine($"USB test {name}: {ex.Message}"); }
             }
-            return tried.Count == 0 ? "No free COM ports to test" : $"No USB response (ports tried: {string.Join(", ", tried)})";
+            return (null, tried.Count == 0 ? "No free COM ports to test" : $"No USB response (ports tried: {string.Join(", ", tried)})");
         }
 
         // Finds a response frame [op, len, status, payload..., crc16 LE] for expectedOp with a valid CRC
@@ -766,12 +770,9 @@ namespace controller
             }
             else
             {
-                try
-                {
-                    Debug.WriteLine("Sending data + CRC byte via USB");
-                    SendUSB(packet);
-                }
-                catch (Exception ex) { Debug.WriteLine("USB exception: " + ex); }
+                // Queued so the writer task can send one command at a time and wait for its reply
+                writeQueue.Enqueue(packet);
+                writeEvent.Set();
             }
         }
         public async Task ConnectAsync()
@@ -1021,13 +1022,19 @@ namespace controller
                         }
                         else
                         {
-                            //continue;
-
+                            // The IPG restarts its UART RX buffer on every packet and only services it
+                            // periodically, so a second command sent before the first is answered overwrites it.
+                            // Wait for the matching reply (or time out) before sending the next command.
                             try
                             {
+                                _usbReplyEvent.Reset();
+                                _usbAwaitOpcode = data[0];
                                 SendUSB(data);
+                                if (!_usbReplyEvent.WaitOne(UsbReplyTimeoutMs))
+                                    Debug.WriteLine($"USB reply timeout for 0x{data[0]:X2}");
                             }
                             catch (Exception ex) { Debug.WriteLine("Worker USB Issue: " + ex); }
+                            finally { _usbAwaitOpcode = -1; }
 
                         }
                     }
@@ -1826,12 +1833,12 @@ namespace controller
             }
             else
             {
-                //Serial port for USB connection
-                string[] ports = SerialPort.GetPortNames();
-                Debug.WriteLine("Ports: " + ports);
-                if (ports.Length > 0 && ports[0] != "")
+                //Serial port for USB connection - use the port the IPG answers on
+                var (portName, probeMsg) = ProbeUsbPorts();
+                Debug.WriteLine("USB probe: " + probeMsg);
+                if (portName != null)
                 {
-                    port = new SerialPort(ports[0], 115200, Parity.None, 8, StopBits.One);
+                    port = new SerialPort(portName, UsbBaudRate, Parity.None, 8, StopBits.One);
                     port.DataReceived += OnUSBRX;
                     port.Open();
                     Debug.WriteLine("Serial port open: " + port.ToString());
@@ -1869,10 +1876,7 @@ namespace controller
         }
         private void SendUSB(byte[] data)
         {
-            //Do we need to discard buffer? Question for Victor
-            port.DiscardInBuffer();
-            port.DiscardOutBuffer();
-
+            // No DiscardInBuffer here: it would drop reply bytes not yet read by OnUSBRX
             port.Write(data, 0, data.Length);
             Debug.WriteLine("USB TX: " + BitConverter.ToString(data));
         }
@@ -1954,6 +1958,8 @@ namespace controller
                         usbRxBuffer.RemoveRange(0, expectedPacketLen);
                         dataQueue.Enqueue((packet, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
                         dataEvent.Set();
+                        bReceived = true; // keep-alive for BLEtimer
+                        if (packet[0] == _usbAwaitOpcode) _usbReplyEvent.Set();
 
                         Debug.WriteLine("USB RX sent to dataQueue: " + BitConverter.ToString(packet));
                     }
@@ -2020,7 +2026,12 @@ namespace controller
                 op == ERASE_IPG_LOG ||
                 op == SET_RTC ||
                 op == GET_RTC ||
-                op == SHUTDOWN_SYSTEM;
+                op == SHUTDOWN_SYSTEM ||
+                op == GET_BLEPARS ||
+                op == MEASURE_IMPEDANCE ||
+                op == ACC_START ||
+                op == ACC_GET ||
+                op == ACC_STOP;
         }
 
         private void SetIpgRtc()
@@ -2761,27 +2772,44 @@ namespace controller
             }
         }
 
-        private void chkUSB_CheckedChanged(object sender, EventArgs e)
+        private async void chkUSB_CheckedChanged(object sender, EventArgs e)
         {
             if (chkUSB.Checked)
             {
-                useBluetooth = false;
                 if (port == null)
                 {
-                    string[] ports = SerialPort.GetPortNames();
-                    if (ports.Length > 0 && ports[0] != "")
+                    // Find the COM port the IPG answers on (bridge exposes MCU + nRF ports; PC may have others).
+                    // Stay on BLE until the port is open.
+                    chkUSB.Enabled = false;
+                    labelRX.Text = "Finding USB port...";
+                    var (portName, probeMsg) = await Task.Run(ProbeUsbPorts);
+                    chkUSB.Enabled = true;
+                    Debug.WriteLine("USB probe: " + probeMsg);
+                    labelRX.Text = probeMsg;
+                    if (portName == null)
                     {
-                        port = new SerialPort(ports[0], 115200, Parity.None, 8, StopBits.One);
+                        chkUSB.Checked = false;
+                        return;
+                    }
+                    try
+                    {
+                        lock (usbRxBuffer) usbRxBuffer.Clear();
+                        port = new SerialPort(portName, UsbBaudRate, Parity.None, 8, StopBits.One);
                         port.DataReceived += OnUSBRX;
                         port.Open();
-                        Debug.WriteLine("USB port opened: " + ports[0]);
+                        Debug.WriteLine("USB port opened: " + portName);
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        Debug.WriteLine("No serial ports found — USB checkbox checked but no port available");
+                        Debug.WriteLine("USB port open failed: " + ex.Message);
+                        labelRX.Text = "USB port open failed";
+                        port?.Dispose();
+                        port = null;
                         chkUSB.Checked = false;
+                        return;
                     }
                 }
+                useBluetooth = false;
             }
             else
             {
@@ -2792,6 +2820,7 @@ namespace controller
                     try { port.Close(); } catch { }
                     port.Dispose();
                     port = null;
+                    lock (usbRxBuffer) usbRxBuffer.Clear();
                     Debug.WriteLine("USB port closed");
                 }
             }
