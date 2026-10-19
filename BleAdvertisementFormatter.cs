@@ -4,6 +4,53 @@ namespace controller;
 
 internal static class BleAdvertisementFormatter
 {
+    public static string CsvHeader() =>
+        "Timestamp,Device,Type,DVDD_V,BattA_V,BattB_V,ImpA_V,ImpB_V,Temp_C," +
+        "CoilPresent,CHG1_Charging,CHG2_Charging,WirelessActive,WirelessPaused,HW_Version,Notes";
+
+    private const int ColumnCount = 16;   // must match CsvHeader()
+
+    // A row carrying only a timestamp, the device and a note. Measurement columns are left blank
+    // so a session marker is never mistaken for a real reading.
+    public static string MarkerRow(string mac, DateTime ts, string note)
+    {
+        var fields = new string[ColumnCount];
+        Array.Fill(fields, "");
+        fields[0] = ts.ToString("yyyy-MM-dd HH:mm:ss.fff");
+        fields[1] = mac;
+        fields[^1] = note;
+        return string.Join(",", fields);
+    }
+
+    public static string ToCsvRow(byte[] payload, string deviceType, string mac, DateTime ts, string notes = "")
+    {
+        string tempStr = payload.Length >= 8
+            ? (CalcTemperature(payload[5] * 10.0, payload[6] * 10.0, payload[7] * 10.0)?.ToString("F1") ?? "n/a")
+            : "n/a";
+
+        string Bit(int bit, bool invert = false) => payload.Length > 8 ? StatusBit(payload, bit, invert) : "n/a";
+
+        string hwVer = payload.Length >= 23 ? payload[22].ToString() : "n/a";
+
+        return string.Join(",",
+            ts.ToString("yyyy-MM-dd HH:mm:ss.fff"),
+            mac,
+            deviceType,
+            payload.Length > 0 ? (payload[0] * 0.1).ToString("F1") : "",
+            payload.Length > 1 ? (payload[1] * 0.1).ToString("F1") : "",
+            payload.Length > 2 ? (payload[2] * 0.1).ToString("F1") : "",
+            payload.Length > 3 ? (payload[3] * 0.01).ToString("F2") : "",
+            payload.Length > 4 ? (payload[4] * 0.01).ToString("F2") : "",
+            tempStr,
+            Bit(0, invert: true),
+            Bit(3, invert: true),
+            Bit(5, invert: true),
+            Bit(14),
+            Bit(15),
+            hwVer,
+            notes);
+    }
+
     public static string Format(byte[] payload, string deviceTypeLabel)
     {
         if (payload.Length < 8)
