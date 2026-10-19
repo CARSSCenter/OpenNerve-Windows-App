@@ -104,9 +104,10 @@ namespace controller
             ckVNB = new CheckBox();
             chkDev = new CheckBox();
             groupDev = new GroupBox();
+            chkUSB = new CheckBox();
             label16 = new System.Windows.Forms.Label();
             chkSave = new CheckBox();
-            chkUSB = new CheckBox();
+            Shutdown = new Button();
             groupSignalMode.SuspendLayout();
             groupSineWave.SuspendLayout();
             groupDev.SuspendLayout();
@@ -986,7 +987,7 @@ namespace controller
             // bGetV2
             // 
             bGetV2.Font = new Font("Times New Roman", 14F);
-            bGetV2.Location = new Point(1254, 997);
+            bGetV2.Location = new Point(1635, 1004);
             bGetV2.Margin = new Padding(4, 5, 4, 5);
             bGetV2.Name = "bGetV2";
             bGetV2.Size = new Size(64, 40);
@@ -999,7 +1000,7 @@ namespace controller
             // bSendV2
             // 
             bSendV2.Font = new Font("Times New Roman", 14F);
-            bSendV2.Location = new Point(1178, 997);
+            bSendV2.Location = new Point(1559, 1004);
             bSendV2.Margin = new Padding(4, 5, 4, 5);
             bSendV2.Name = "bSendV2";
             bSendV2.Size = new Size(71, 40);
@@ -1012,7 +1013,7 @@ namespace controller
             // label10
             // 
             label10.Font = new Font("Times New Roman", 14F);
-            label10.Location = new Point(1079, 966);
+            label10.Location = new Point(1460, 973);
             label10.Margin = new Padding(4, 0, 4, 0);
             label10.MaximumSize = new Size(200, 33);
             label10.MinimumSize = new Size(240, 33);
@@ -1026,7 +1027,7 @@ namespace controller
             // txtV2
             // 
             txtV2.Font = new Font("Times New Roman", 12F);
-            txtV2.Location = new Point(1098, 1000);
+            txtV2.Location = new Point(1479, 1007);
             txtV2.Margin = new Padding(4, 5, 4, 5);
             txtV2.Name = "txtV2";
             txtV2.Size = new Size(72, 30);
@@ -1037,7 +1038,7 @@ namespace controller
             // bGetV1
             // 
             bGetV1.Font = new Font("Times New Roman", 14F);
-            bGetV1.Location = new Point(1254, 926);
+            bGetV1.Location = new Point(1635, 933);
             bGetV1.Margin = new Padding(4, 5, 4, 5);
             bGetV1.Name = "bGetV1";
             bGetV1.Size = new Size(64, 40);
@@ -1050,7 +1051,7 @@ namespace controller
             // bSendV1
             // 
             bSendV1.Font = new Font("Times New Roman", 14F);
-            bSendV1.Location = new Point(1178, 926);
+            bSendV1.Location = new Point(1559, 933);
             bSendV1.Margin = new Padding(4, 5, 4, 5);
             bSendV1.Name = "bSendV1";
             bSendV1.Size = new Size(71, 40);
@@ -1063,7 +1064,7 @@ namespace controller
             // label11
             // 
             label11.Font = new Font("Times New Roman", 14F);
-            label11.Location = new Point(1079, 895);
+            label11.Location = new Point(1460, 902);
             label11.Margin = new Padding(4, 0, 4, 0);
             label11.MaximumSize = new Size(200, 33);
             label11.MinimumSize = new Size(240, 33);
@@ -1077,7 +1078,7 @@ namespace controller
             // txtV1
             // 
             txtV1.Font = new Font("Times New Roman", 12F);
-            txtV1.Location = new Point(1098, 929);
+            txtV1.Location = new Point(1479, 936);
             txtV1.Margin = new Padding(4, 5, 4, 5);
             txtV1.Name = "txtV1";
             txtV1.Size = new Size(72, 30);
@@ -1180,6 +1181,7 @@ namespace controller
             // 
             // groupDev
             // 
+            groupDev.Controls.Add(Shutdown);
             groupDev.Controls.Add(chkUSB);
             groupDev.Controls.Add(bDownloadLogs);
             groupDev.Controls.Add(bSetMaxBlock);
@@ -1192,10 +1194,21 @@ namespace controller
             groupDev.Enabled = false;
             groupDev.Location = new Point(6, 926);
             groupDev.Name = "groupDev";
-            groupDev.Size = new Size(1055, 117);
+            groupDev.Size = new Size(1447, 117);
             groupDev.TabIndex = 83;
             groupDev.TabStop = false;
             groupDev.Visible = false;
+            // 
+            // chkUSB
+            // 
+            chkUSB.AutoSize = true;
+            chkUSB.Location = new Point(6, 87);
+            chkUSB.Name = "chkUSB";
+            chkUSB.Size = new Size(65, 24);
+            chkUSB.TabIndex = 91;
+            chkUSB.Text = "USB?";
+            chkUSB.UseVisualStyleBackColor = true;
+            chkUSB.CheckedChanged += chkUSB_CheckedChanged;
             // 
             // label16
             // 
@@ -1222,16 +1235,15 @@ namespace controller
             chkSave.UseVisualStyleBackColor = true;
             chkSave.CheckedChanged += chkSave_CheckedChanged;
             // 
-            // chkUSB
+            // Shutdown
             // 
-            chkUSB.AutoSize = true;
-            chkUSB.Location = new Point(6, 87);
-            chkUSB.Name = "chkUSB";
-            chkUSB.Size = new Size(65, 24);
-            chkUSB.TabIndex = 91;
-            chkUSB.Text = "USB?";
-            chkUSB.UseVisualStyleBackColor = true;
-            chkUSB.CheckedChanged += chkUSB_CheckedChanged;
+            Shutdown.Location = new Point(1071, 26);
+            Shutdown.Name = "Shutdown";
+            Shutdown.Size = new Size(192, 54);
+            Shutdown.TabIndex = 92;
+            Shutdown.Text = "Shut Down IPG";
+            Shutdown.UseVisualStyleBackColor = true;
+            Shutdown.Click += Shutdown_Click;
             // 
             // Form1
             // 
@@ -1409,5 +1421,6 @@ namespace controller
         public System.Windows.Forms.Label label16;
         private CheckBox chkSave;
         private CheckBox chkUSB;
+        private Button Shutdown;
     }
 }

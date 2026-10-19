@@ -65,6 +65,7 @@ namespace controller
         private const byte ERASE_IPG_LOG = 0xAF;
         private const byte GET_RTC = 0xB0;
         private const byte SET_RTC = 0xB1;
+        private const byte SHUTDOWN_SYSTEM = 0xA0;
         private static int PacketLen = 100;
         private static int PacketCnt = 100;
         private double[] EMGdata = new double[PacketLen * PacketCnt]; //10,000
@@ -371,6 +372,17 @@ namespace controller
             Debug.WriteLine("--- IPG Log Erase Sent (manual) ---");
             byte[] eraseCmd = [ERASE_IPG_LOG, 0x00];
             Sending(eraseCmd);
+        }
+
+        private void Shutdown_Click(object sender, EventArgs e)
+        {
+            if (bView.Text == "Stop Measuring") bView.PerformClick(); // stops sensor/XL stream + closes CSV
+            Sending([STOP_MANUAL_THERAPY, 0x00]);                     // also covers VNB block
+            Debug.WriteLine("TX Shutdown");
+            labelTX.Text = "Shutdown";
+            labelRX.Text = "";
+            Shutdown.Enabled = false;
+            Sending([SHUTDOWN_SYSTEM, 0x00]);
         }
         private void ReportParameterError(TextBox input, string message)
         {
@@ -1412,6 +1424,11 @@ namespace controller
                 case SET_RTC:
                     Debug.WriteLine("--- IPG RTC Set Complete ---");
                     break;
+                case SHUTDOWN_SYSTEM:
+                    Debug.WriteLine("RX Shutdown");
+                    labelRX.BeginInvoke((Action)(() => labelRX.Text = "IPG Shut Down"));
+                    DoDisconnect(); // bypass FormClosing so no log download is attempted
+                    break;
                 case ACC_START:
                     if (bResponse[2] == 0) //Status OK
                     {
@@ -1905,7 +1922,8 @@ namespace controller
                 op == READ_IPG_LOG ||
                 op == ERASE_IPG_LOG ||
                 op == SET_RTC ||
-                op == GET_RTC;
+                op == GET_RTC ||
+                op == SHUTDOWN_SYSTEM;
         }
 
         private void SetIpgRtc()
@@ -1968,6 +1986,7 @@ namespace controller
             yield return bBlockMax;
             yield return bDownloadLogs;
             yield return bClearLogs;
+            yield return Shutdown;
         }
 
         private void SetIpgCommunicationLocked(bool locked)
