@@ -2,7 +2,6 @@
 
 Build, run, and test ONrecorder from an Apple Silicon Mac (M1, M2, M3, M4).
 
-> **Status: Draft.** Each step ends with a `- [ ] Done` checkbox. Change it to `- [x] Done` once the step works on a real Mac.\
 > Verified on: MacBook (M3), macOS ___, date ___
 
 ---
@@ -18,19 +17,33 @@ Build, run, and test ONrecorder from an Apple Silicon Mac (M1, M2, M3, M4).
 ## The pipeline
 
 1️⃣ 🍺 INSTALL — Get the Mac apps you need for the VM.
+
 ⬇️
+
 2️⃣ 🪟 CREATE — Make the Windows 11 ARM VM.
+
 ⬇️
+
 3️⃣ 🛠️ INSTALL — Add Visual Studio and Git inside Windows.
+
 ⬇️
+
 4️⃣ 📥 CLONE — Download the code inside Windows.
+
 ⬇️
+
 5️⃣ 🚀 RUN — Start ONrecorder live. *Milestone: it's live!*
+
 ⬇️
+
 6️⃣ 💻 INSTALL — Add .NET tools on your Mac.
+
 ⬇️
+
 7️⃣ 🧪 TEST — Unit-test non-UI code on your Mac.
+
 ⬇️
+
 8️⃣ 🔍 CHECK — (Optional) Compile the whole app on your Mac.
 
 ---
@@ -62,8 +75,6 @@ brew install --cask crystalfetch
 
 ✅ **Passed if:** UTM and CrystalFetch both open from your Applications folder.
 
-- [ ] Done
-
 ### Step 2: Create the Windows 11 ARM VM
 
 1. Open **CrystalFetch**. Download **Windows 11, ARM64**.
@@ -75,8 +86,6 @@ brew install --cask crystalfetch
 7. Inside Windows, install the **UTM guest tools** when prompted. They add clipboard sharing and window resizing.
 
 ✅ **Passed if:** Windows reaches the desktop, and the screen resizes when you resize the UTM window.
-
-- [ ] Done
 
 ### Step 3: Install Visual Studio and Git in Windows
 
@@ -90,8 +99,6 @@ winget install Git.Git
 This can take a while. Let it finish.
 
 ✅ **Passed if:** Visual Studio 2022 opens, and `git --version` works in a **new** PowerShell window.
-
-- [ ] Done
 
 ### Step 4: Clone the code inside Windows
 
@@ -108,8 +115,6 @@ To move changes between your Mac and the VM, use `git push` and `git pull` throu
 
 ✅ **Passed if:** the file `C:\src\OpenNerve-Windows-App\ONrecorder.sln` exists.
 
-- [ ] Done
-
 ### Step 5: Run ONrecorder live 🚀
 
 1. Open `ONrecorder.sln` in Visual Studio.
@@ -119,8 +124,6 @@ To move changes between your Mac and the VM, use `git push` and `git pull` throu
 
 ✅ **Passed if:** the ONrecorder window opens.
 
-- [ ] Done
-
 Now try the standalone `.exe`:
 
 1. Open File Explorer.
@@ -128,8 +131,6 @@ Now try the standalone `.exe`:
 3. Double-click the `.exe`.
 
 ✅ **Passed if:** the `.exe` opens outside Visual Studio.
-
-- [ ] Done
 
 🎉 **It's live.** Everything below is optional speed-ups on your Mac.
 
@@ -155,8 +156,6 @@ code --install-extension ms-dotnettools.csdevkit
 Why the script and not `brew install dotnet-sdk`? Homebrew installs the newest .NET. Test projects that target .NET 8 need the 8.0 runtime.
 
 ✅ **Passed if:** `dotnet --list-sdks` shows a line starting with `8.0`.
-
-- [ ] Done
 
 ### Step 7: Unit-test non-UI code on your Mac
 
@@ -186,8 +185,6 @@ dotnet test
 
 ✅ **Passed if:** `dotnet test` says all tests passed.
 
-- [ ] Done
-
 > Keep this test project out of `ONrecorder.sln` until maintainers agree on where tests should live.
 
 ### Step 8 (optional): Compile the whole app on your Mac
@@ -201,8 +198,6 @@ dotnet build ONrecorder.csproj -p:EnableWindowsTargeting=true -p:Platform=x86
 ✅ **Passed if:** the output ends with `Build succeeded`.
 
 If it fails on the `Microsoft.WindowsAppSDK` package, skip this step. The VM covers it.
-
-- [ ] Done
 
 ---
 
