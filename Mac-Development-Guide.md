@@ -2,8 +2,7 @@
 
 Build, run, and test ONrecorder from an Apple Silicon Mac (M1, M2, M3, M4).
 
-> **Status: Draft.** Each step has a ☐ checkbox. Change it to ☑ once the step works on a real Mac.
->
+> **Status: Draft.** Each step ends with a `- [ ] Done` checkbox. Change it to `- [x] Done` once the step works on a real Mac.\
 > Verified on: MacBook (M3), macOS ___, date ___
 
 ---
@@ -63,7 +62,7 @@ brew install --cask crystalfetch
 
 ✅ **Passed if:** UTM and CrystalFetch both open from your Applications folder.
 
-☐ Done
+- [ ] Done
 
 ### Step 2: Create the Windows 11 ARM VM
 
@@ -77,7 +76,7 @@ brew install --cask crystalfetch
 
 ✅ **Passed if:** Windows reaches the desktop, and the screen resizes when you resize the UTM window.
 
-☐ Done
+- [ ] Done
 
 ### Step 3: Install Visual Studio and Git in Windows
 
@@ -92,7 +91,7 @@ This can take a while. Let it finish.
 
 ✅ **Passed if:** Visual Studio 2022 opens, and `git --version` works in a **new** PowerShell window.
 
-☐ Done
+- [ ] Done
 
 ### Step 4: Clone the code inside Windows
 
@@ -109,7 +108,7 @@ To move changes between your Mac and the VM, use `git push` and `git pull` throu
 
 ✅ **Passed if:** the file `C:\src\OpenNerve-Windows-App\ONrecorder.sln` exists.
 
-☐ Done
+- [ ] Done
 
 ### Step 5: Run ONrecorder live 🚀
 
@@ -120,7 +119,7 @@ To move changes between your Mac and the VM, use `git push` and `git pull` throu
 
 ✅ **Passed if:** the ONrecorder window opens.
 
-☐ Done
+- [ ] Done
 
 Now try the standalone `.exe`:
 
@@ -130,7 +129,7 @@ Now try the standalone `.exe`:
 
 ✅ **Passed if:** the `.exe` opens outside Visual Studio.
 
-☐ Done
+- [ ] Done
 
 🎉 **It's live.** Everything below is optional speed-ups on your Mac.
 
@@ -157,7 +156,7 @@ Why the script and not `brew install dotnet-sdk`? Homebrew installs the newest .
 
 ✅ **Passed if:** `dotnet --list-sdks` shows a line starting with `8.0`.
 
-☐ Done
+- [ ] Done
 
 ### Step 7: Unit-test non-UI code on your Mac
 
@@ -187,7 +186,7 @@ dotnet test
 
 ✅ **Passed if:** `dotnet test` says all tests passed.
 
-☐ Done
+- [ ] Done
 
 > Keep this test project out of `ONrecorder.sln` until maintainers agree on where tests should live.
 
@@ -203,7 +202,7 @@ dotnet build ONrecorder.csproj -p:EnableWindowsTargeting=true -p:Platform=x86
 
 If it fails on the `Microsoft.WindowsAppSDK` package, skip this step. The VM covers it.
 
-☐ Done
+- [ ] Done
 
 ---
 
